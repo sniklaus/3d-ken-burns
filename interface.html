@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/2.24.0/load-image.all.min.js"></script>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.5/cropper.min.css" />
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.5/cropper.min.js"></script>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" />
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+		<style type="text/css">
+			.btn:focus, .btn:active {
+				box-shadow:none !important;
+				outline:0px !important;
+			}
+		</style>
+
+		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css" />
+	</head>
+	<body style="background-color:#232323;">
+		<div style="left:50%; position:absolute; top:50%; transform:translate(-50%, -50%);">
+			<table style="margin:0px auto 0px auto; vertical-align:middle;">
+				<tbody>
+					<tr>
+						<td>
+							<div style="padding:40px 20px 40px 40px;">
+								<div style="background-color:#1D1D1D; border:1px solid #2A2A2A; display:inline-block; width:480px; height:360px;">
+									<img id="from" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" />
+								</div>
+							</div>
+							<div style="padding:40px 20px 40px 40px;">
+								<div style="background-color:#1D1D1D; border:1px solid #2A2A2A; display:inline-block; width:480px; height:360px;">
+									<img id="to" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" />
+								</div>
+							</div>
+						</td>
+						<td>
+							<div style="padding:20px 20px 20px 20px; width:100px;">
+								<button class="btn btn-primary" id="plause" style="display:inline-block; font-size:24px; padding:10px 20px 10px 20px; width:100%;"><i class="fa fa-play"></i></button>
+							</div>
+						</td>
+						<td>
+							<div style="padding:40px 40px 40px 20px;">
+								<div style="background-color:#1D1D1D; border:1px solid #2A2A2A; display:inline-block;">
+									<img src="/get_live" />
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div style="bottom:16px; position:fixed; right:16px;">
+			<button class="btn btn-primary" id="autozoom" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-magic"></i></button>
+			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa fa-folder-open"></i><input id="file" type="file" multiple="multiple" style="bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
+			<a class="btn btn-primary" id="save" href="/get_result" target="_blank" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-save"></i></a>
+		</div>
+
+		<script type="text/javascript">
+			var objectFrom = null;
+			var objectTo = null;
+		</script>
+
+		<script type="text/javascript">
+			jQuery(window.document)
+				.on('keydown', function(objectEvent) {
+					if (objectEvent.keyCode === 49) {
+						console.log(JSON.stringify({
+							'strFile': jQuery('#file').get(0).files[0].name,
+							'objectFrom': {
+								'dblCenterU': objectFrom.getData().x + (0.5 * objectFrom.getData().width),
+								'dblCenterV': objectFrom.getData().y + (0.5 * objectFrom.getData().height),
+								'intCropWidth': objectFrom.getData().width,
+								'intCropHeight': objectFrom.getData().height
+							},
+							'objectTo': {
+								'dblCenterU': objectTo.getData().x + (0.5 * objectTo.getData().width),
+								'dblCenterV': objectTo.getData().y + (0.5 * objectTo.getData().height),
+								'intCropWidth': objectTo.getData().width,
+								'intCropHeight': objectTo.getData().height
+							}
+						}));
+					}
+				})
+			;
+
+			jQuery('#plause')
+				.on('click', function() {
+					if (jQuery('#plause').find('i').hasClass('fa-play') === true) {
+						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-pause');
+						jQuery.post('/update_mode', { 'strMode': 'automatic' });
+
+					} else if (jQuery('#plause').find('i').hasClass('fa-pause') === true) {
+						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+						jQuery.post('/update_mode', { 'strMode': 'manual' });
+
+					}
+				})
+			;
+
+			jQuery('#autozoom')
+				.on('click', function() {
+					jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+					jQuery.post('/update_mode', { 'strMode': 'manual' });
+
+					jQuery.post('/autozoom', {}, function(objectData) {
+						objectFrom.setData({
+							'x': objectData.objectFrom.dblCenterU - (objectData.objectFrom.intCropWidth / 2.0),
+							'y': objectData.objectFrom.dblCenterV - (objectData.objectFrom.intCropHeight / 2.0),
+							'width': objectData.objectFrom.intCropWidth,
+							'height': objectData.objectFrom.intCropHeight,
+							'rotate': 0.0,
+							'scaleX': 1.0,
+							'scaleY': 1.0
+						});
+
+						objectTo.setData({
+							'x': objectData.objectTo.dblCenterU - (objectData.objectTo.intCropWidth / 2.0),
+							'y': objectData.objectTo.dblCenterV - (objectData.objectTo.intCropHeight / 2.0),
+							'width': objectData.objectTo.intCropWidth,
+							'height': objectData.objectTo.intCropHeight,
+							'rotate': 0.0,
+							'scaleX': 1.0,
+							'scaleY': 1.0
+						});
+
+						window.setTimeout(function() {
+							jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-pause');
+							jQuery.post('/update_mode', { 'strMode': 'automatic' });
+						}, 500);
+					});
+				})
+			;
+
+			jQuery('#file')
+				.on('click', function(objectEvent) {
+					objectEvent.stopPropagation();
+				})
+				.on('change', function(objectEvent) {
+					if (objectEvent.target.files.length !== 1) {
+						return;
+					}
+
+					loadImage(objectEvent.target.files[0], function(objectImage) {
+						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+						jQuery.post('/update_mode', { 'strMode': 'manual' });
+
+						jQuery('#from, #to')
+							.attr('src', objectImage.toDataURL())
+						;
+
+						if (objectFrom !== null) {
+							objectFrom.destroy();
+						}
+
+						if (objectTo !== null) {
+							objectTo.destroy();
+						}
+
+						objectFrom = new Cropper(jQuery('#from').get(0), {
+							'aspectRatio': 4.0 / 3.0,
+							'guides': false,
+							'minCropBoxWidth': 120.0,
+							'viewMode': 3,
+							'zoomOnWheel': false,
+							'ready': function() {
+								objectFrom.setData({
+									'x': (1024 - 900) / 2,
+									'y': (768 - 675) / 2,
+									'width': 900,
+									'height': 675,
+									'rotate': 0.0,
+									'scaleX': 1.0,
+									'scaleY': 1.0
+								});
+
+								objectFrom.options.crop();
+							},
+							'crop': function() {
+								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+								jQuery.post('/update_mode', { 'strMode': 'manual' });
+
+								jQuery.post('/update_from', {
+									'dblCenterU': objectFrom.getData().x + (0.5 * objectFrom.getData().width),
+									'dblCenterV': objectFrom.getData().y + (0.5 * objectFrom.getData().height),
+									'intCropWidth': Math.round(objectFrom.getData().width),
+									'intCropHeight': Math.round(objectFrom.getData().height)
+								});
+							}
+						});
+
+						objectTo = new Cropper(jQuery('#to').get(0), {
+							'aspectRatio': 4.0 / 3.0,
+							'guides': false,
+							'minCropBoxWidth': 120.0,
+							'viewMode': 3,
+							'zoomOnWheel': false,
+							'ready': function() {
+								objectTo.setData({
+									'x': (1024 - 900) / 2,
+									'y': (768 - 675) / 2,
+									'width': 900,
+									'height': 675,
+									'rotate': 0.0,
+									'scaleX': 1.0,
+									'scaleY': 1.0
+								});
+
+								objectTo.options.crop();
+							},
+							'crop': function() {
+								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+								jQuery.post('/update_mode', { 'strMode': 'manual' });
+
+								jQuery.post('/update_to', {
+									'dblCenterU': objectTo.getData().x + (0.5 * objectTo.getData().width),
+									'dblCenterV': objectTo.getData().y + (0.5 * objectTo.getData().height),
+									'intCropWidth': Math.round(objectTo.getData().width),
+									'intCropHeight': Math.round(objectTo.getData().height)
+								});
+							}
+						});
+
+						jQuery.post('/load_image', {
+							'strFile': objectEvent.target.files[0].name,
+							'strData': objectImage.toDataURL()
+						})
+					}, {
+						'canvas': true,
+						'minWidth': 1024,
+						'maxWidth': 1024,
+						'minHeight': 768,
+						'maxHeight': 768,
+						'crop': true
+					});
+				})
+				.parent()
+					.on('click', function() {
+						jQuery('#file').click();
+					})
+				.end()
+			;
+		</script>
+	</body>
+</html>

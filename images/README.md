@@ -1,0 +1,1 @@
+The image "Double Strike" is used with permission from Kirk Lougheed: https://www.flickr.com/photo.gne?id=36766944501
