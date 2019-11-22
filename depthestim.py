@@ -53,7 +53,7 @@ arguments_strIn = './images/doublestrike.jpg'
 arguments_strOut = './depthestim.npy'
 
 for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:] + '=' for strParameter in sys.argv[1::2] ])[0]:
-	if strOption == '--in' and strArgument != '': arguments_strFirst = strArgument # path to the input image
+	if strOption == '--in' and strArgument != '': arguments_strIn = strArgument # path to the input image
 	if strOption == '--out' and strArgument != '': arguments_strOut = strArgument # path to where the output should be stored
 # end
 
