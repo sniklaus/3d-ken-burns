@@ -34,6 +34,10 @@ To benchmark the depth estimation, run `python benchmark.py`. You can use it to 
 ## colab
 If you do not have a suitable environment to run this projects then you could give Colab a try. It allows you to run the project in the cloud, free of charge. There are several people who provide Colab notebooks that should get you started, including one from [Arnaldo Gabriel](https://colab.research.google.com/github/agmm/colab-3d-ken-burns/blob/master/automatic-3d-ken-burns.ipynb) and one from [Vlad Alex](https://towardsdatascience.com/very-spatial-507aa847179d).
 
+## Repl.it
+You can also run the program on repl.it. By hitting the run button at the top, you are running interface.py.
+[![Run on Repl.it](https://repl.it/badge/github/sniklaus/3d-ken-burns)](https://repl.it/github/sniklaus/3d-ken-burns)
+
 ## video
 <a href="http://content.sniklaus.com/kenburns/video.mp4" rel="Video"><img src="http://content.sniklaus.com/kenburns/video.jpg" alt="Video" width="100%"></a>
 
