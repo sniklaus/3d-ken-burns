@@ -1,4 +1,4 @@
-class Basic(torch.jit.ScriptModule):
+class Basic(torch.nn.Module):
 	def __init__(self, strType, intChannels):
 		super(Basic, self).__init__()
 
@@ -39,7 +39,7 @@ class Basic(torch.jit.ScriptModule):
 	# end
 # end
 
-class Downsample(torch.jit.ScriptModule):
+class Downsample(torch.nn.Module):
 	def __init__(self, intChannels):
 		super(Downsample, self).__init__()
 
@@ -56,7 +56,7 @@ class Downsample(torch.jit.ScriptModule):
 	# end
 # end
 
-class Upsample(torch.jit.ScriptModule):
+class Upsample(torch.nn.Module):
 	def __init__(self, intChannels):
 		super(Upsample, self).__init__()
 
