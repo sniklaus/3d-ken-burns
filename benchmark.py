@@ -30,7 +30,7 @@ import zipfile
 
 ##########################################################
 
-assert(int(str('').join(torch.__version__.split('.')[0:3])) >= 120) # requires at least pytorch version 1.2.0
+assert(int(str('').join(torch.__version__.split('.')[0:2])) >= 12) # requires at least pytorch version 1.2.0
 
 torch.set_grad_enabled(False) # make sure to not compute gradients for computational performance
 
