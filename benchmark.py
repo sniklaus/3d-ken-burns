@@ -99,83 +99,40 @@ objectZip = zipfile.ZipFile('./benchmark-ibims-data.zip', 'r')
 for intMat, strMat in enumerate([ strFile for strFile in objectZip.namelist() if strFile.endswith('.mat') ]):
 	print(intMat, strMat)
 
-	with open('./temp.mat', 'wb') as objectFile:
-		objectFile.write(objectZip.read(strMat))
-	# end
+	objectMat = scipy.io.loadmat(io.BytesIO(objectZip.read(strMat)))['data']
 
-	objectMat = scipy.io.loadmat('./temp.mat')['data']
-
-	os.remove('./temp.mat')
-
-	rgb = objectMat['rgb'][0][0]
-	depth = objectMat['depth'][0][0]
-	edges = objectMat['edges'][0][0]
-	calib = objectMat['calib'][0][0]
-
-	tensorImage = torch.FloatTensor(rgb[:, :, ::-1].copy().transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
+	tensorImage = torch.FloatTensor(numpy.ascontiguousarray(objectMat['rgb'][0][0][:, :, ::-1]).transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
 	tensorDisparity = disparity_estimation(tensorImage)
 	tensorDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tensorImage, size=(tensorDisparity.shape[2] * 4, tensorDisparity.shape[3] * 4), mode='bilinear', align_corners=False), tensorDisparity)
 	tensorDisparity = torch.nn.functional.interpolate(input=tensorDisparity, size=(tensorImage.shape[2], tensorImage.shape[3]), mode='bilinear', align_corners=False) * (max(tensorImage.shape[2], tensorImage.shape[3]) / 256.0)
 	tensorDepth = 1.0 / tensorDisparity
 
+	valid = objectMat['mask_transp'][0][0] * objectMat['mask_invalid'][0][0] * (objectMat['depth'][0][0] != 0.0)
+
 	pred = tensorDepth[0, 0, :, :].cpu().numpy()
-	pred_org = pred.copy()
+	numpyLstsqa = numpy.stack([pred[valid == 1.0].flatten(), numpy.full([int((valid == 1.0).sum().item())], 1.0, numpy.float32)], 1)
+	numpyLstsqb = objectMat['depth'][0][0][valid == 1.0].flatten()
+	numpyScalebias = numpy.linalg.lstsq(numpyLstsqa, numpyLstsqb, None)[0]
+	pred = (pred * numpyScalebias[0]) + numpyScalebias[1]
 
-	mask_transp = objectMat['mask_transp'][0][0]
-	mask_invalid = objectMat['mask_invalid'][0][0]
-	mask_missing = depth.copy(); mask_missing[mask_missing != 0.0] = 1
-	mask_valid = mask_transp * mask_invalid * mask_missing
+	abs_rel[intMat], sq_rel[intMat], rms[intMat], log10[intMat], thr1[intMat], thr2[intMat], thr3[intMat] = compute_global_errors((objectMat['depth'][0][0] * valid).flatten(), (pred * valid).flatten())
+	dde_0[intMat], dde_m[intMat], dde_p[intMat] = compute_directed_depth_error((objectMat['depth'][0][0] * valid).flatten(), (pred * valid).flatten(), 3.0)
+	dbe_acc[intMat], dbe_com[intMat] = compute_depth_boundary_error(objectMat['edges'][0][0], pred)
 
-	gt = depth * mask_valid
-	pred = pred * mask_valid
-
-	if True:
-		numpyA = numpy.zeros([ pred.shape[0] * pred.shape[1], 2 ], numpy.float32)
-		numpyB = numpy.zeros([ pred.shape[0] * pred.shape[1] ], numpy.float32)
-
-		intConstraint = 0
-		for intY in range(pred.shape[0]):
-			for intX in range(pred.shape[1]):
-				if mask_valid[intY, intX] == 1.0:
-					numpyA[intConstraint, 0] = pred[intY, intX]
-					numpyA[intConstraint, 1] = 1.0
-					numpyB[intConstraint] = gt[intY, intX]
-
-					intConstraint += 1
-				# end
-			# end
-		# end
-
-		numpyScalebias = numpy.linalg.lstsq(numpyA[0:intConstraint, :], numpyB[0:intConstraint], None)[0]
-
-		pred = (pred * numpyScalebias[0]) + numpyScalebias[1]
-		pred_org = (pred_org * numpyScalebias[0]) + numpyScalebias[1]
-	# end
-
-	abs_rel[intMat], sq_rel[intMat], rms[intMat], log10[intMat], thr1[intMat], thr2[intMat], thr3[intMat] = compute_global_errors(gt.flatten(), pred.flatten())
-	dde_0[intMat], dde_m[intMat], dde_p[intMat] = compute_directed_depth_error(gt.flatten(), pred.flatten(), 3.0)
-	dbe_acc[intMat], dbe_com[intMat] = compute_depth_boundary_error(edges, pred_org)
-
-	mask_wall = objectMat['mask_wall'][0][0]*mask_valid
-	paras_wall = objectMat['mask_wall_paras'][0][0]
-	if paras_wall.size > 0:
-		pe_fla_wall, pe_ori_wall = compute_planarity_error(gt, pred, paras_wall, mask_wall, calib)
+	if objectMat['mask_wall_paras'][0][0].size > 0:
+		pe_fla_wall, pe_ori_wall = compute_planarity_error(objectMat['depth'][0][0] * valid, pred * valid, objectMat['mask_wall_paras'][0][0], objectMat['mask_wall'][0][0] * valid, objectMat['calib'][0][0])
 		pe_fla.extend(pe_fla_wall.tolist())
 		pe_ori.extend(pe_ori_wall.tolist())
 	# end
 
-	mask_table = objectMat['mask_table'][0][0]*mask_valid
-	paras_table = objectMat['mask_table_paras'][0][0]
-	if paras_table.size > 0:
-		pe_fla_table, pe_ori_table = compute_planarity_error(gt, pred, paras_table, mask_table, calib)
+	if objectMat['mask_table_paras'][0][0].size > 0:
+		pe_fla_table, pe_ori_table = compute_planarity_error(objectMat['depth'][0][0] * valid, pred * valid, objectMat['mask_table_paras'][0][0], objectMat['mask_table'][0][0] * valid, objectMat['calib'][0][0])
 		pe_fla.extend(pe_fla_table.tolist())
 		pe_ori.extend(pe_ori_table.tolist())
 	# end
 
-	mask_floor = objectMat['mask_floor'][0][0]*mask_valid
-	paras_floor = objectMat['mask_floor_paras'][0][0]
-	if paras_floor.size > 0:
-		pe_fla_floor, pe_ori_floor = compute_planarity_error(gt, pred, paras_floor, mask_floor, calib)
+	if objectMat['mask_floor_paras'][0][0].size > 0:
+		pe_fla_floor, pe_ori_floor = compute_planarity_error(objectMat['depth'][0][0] * valid, pred * valid, objectMat['mask_floor_paras'][0][0], objectMat['mask_floor'][0][0] * valid, objectMat['calib'][0][0])
 		pe_fla.extend(pe_fla_floor.tolist())
 		pe_ori.extend(pe_ori_floor.tolist())
 	# end
