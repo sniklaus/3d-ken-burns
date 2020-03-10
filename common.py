@@ -456,7 +456,8 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 			const int intY = ( intIndex / SIZE_3(zee)                             ) % SIZE_2(zee);
 			const int intX = ( intIndex                                           ) % SIZE_3(zee);
 
-			assert(SIZE_1(intC) == 1);
+			assert(SIZE_1(input) == 3);
+			assert(SIZE_1(zee) == 1);
 
 			int intCount = 0;
 			float dblSum = 0.0;
