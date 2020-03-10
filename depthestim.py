@@ -67,8 +67,8 @@ if __name__ == '__main__':
 
 	tensorImage = torch.FloatTensor(numpyImage.transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
 	tensorDisparity = disparity_estimation(tensorImage)
-	tensorDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tensorImage, size=(tensorDisparity.size(2) * 4, tensorDisparity.size(3) * 4), mode='bilinear', align_corners=False), tensorDisparity)
-	tensorDisparity = torch.nn.functional.interpolate(input=tensorDisparity, size=(tensorImage.size(2), tensorImage.size(3)), mode='bilinear', align_corners=False) * (max(tensorImage.size(2), tensorImage.size(3)) / 256.0)
+	tensorDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tensorImage, size=(tensorDisparity.shape[2] * 4, tensorDisparity.shape[3] * 4), mode='bilinear', align_corners=False), tensorDisparity)
+	tensorDisparity = torch.nn.functional.interpolate(input=tensorDisparity, size=(tensorImage.shape[2], tensorImage.shape[3]), mode='bilinear', align_corners=False) * (max(tensorImage.shape[2], tensorImage.shape[3]) / 256.0)
 	tensorDepth = (dblFocal * dblBaseline) / (tensorDisparity + 0.0000001)
 
 	numpyDisparity = tensorDisparity[0, 0, :, :].cpu().numpy()

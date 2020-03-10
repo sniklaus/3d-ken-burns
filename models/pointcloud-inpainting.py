@@ -115,8 +115,8 @@ class Inpaint(torch.nn.Module):
 		tensorPoints = depth_to_points(tensorDepth * tensorValid, objectCommon['dblFocal'])
 		tensorPoints = tensorPoints.view(1, 3, -1)
 
-		tensorMean = [ tensorImage.view(tensorImage.size(0), -1).mean(1, True).view(tensorImage.size(0), 1, 1, 1), tensorDisparity.view(tensorDisparity.size(0), -1).mean(1, True).view(tensorDisparity.size(0), 1, 1, 1) ]
-		tensorStd = [ tensorImage.view(tensorImage.size(0), -1).std(1, True).view(tensorImage.size(0), 1, 1, 1), tensorDisparity.view(tensorDisparity.size(0), -1).std(1, True).view(tensorDisparity.size(0), 1, 1, 1) ]
+		tensorMean = [ tensorImage.view(tensorImage.shape[0], -1).mean(1, True).view(tensorImage.shape[0], 1, 1, 1), tensorDisparity.view(tensorDisparity.shape[0], -1).mean(1, True).view(tensorDisparity.shape[0], 1, 1, 1) ]
+		tensorStd = [ tensorImage.view(tensorImage.shape[0], -1).std(1, True).view(tensorImage.shape[0], 1, 1, 1), tensorDisparity.view(tensorDisparity.shape[0], -1).std(1, True).view(tensorDisparity.shape[0], 1, 1, 1) ]
 
 		tensorImage = tensorImage.clone()
 		tensorImage -= tensorMean[0]
@@ -155,8 +155,8 @@ class Inpaint(torch.nn.Module):
 			if intRow != len(tensorColumn) - 1:
 				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
 
-				if tensorUp.size(2) != tensorColumn[intRow].size(2): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.size(3) != tensorColumn[intRow].size(3): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
 				tensorColumn[intRow] += tensorUp
 			# end
@@ -168,8 +168,8 @@ class Inpaint(torch.nn.Module):
 			if intRow != len(tensorColumn) - 1:
 				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
 
-				if tensorUp.size(2) != tensorColumn[intRow].size(2): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.size(3) != tensorColumn[intRow].size(3): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
 				tensorColumn[intRow] += tensorUp
 			# end

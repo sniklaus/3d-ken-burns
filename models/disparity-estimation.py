@@ -167,8 +167,8 @@ class Disparity(torch.nn.Module):
 			if intRow != len(tensorColumn) - 1:
 				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
 
-				if tensorUp.size(2) != tensorColumn[intRow].size(2): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.size(3) != tensorColumn[intRow].size(3): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
 				tensorColumn[intRow] += tensorUp
 			# end
@@ -180,8 +180,8 @@ class Disparity(torch.nn.Module):
 			if intRow != len(tensorColumn) - 1:
 				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
 
-				if tensorUp.size(2) != tensorColumn[intRow].size(2): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.size(3) != tensorColumn[intRow].size(3): tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
 				tensorColumn[intRow] += tensorUp
 			# end
@@ -195,8 +195,8 @@ moduleSemantics = Semantics().cuda().eval()
 moduleDisparity = Disparity().cuda().eval(); moduleDisparity.load_state_dict(torch.load('./models/disparity-estimation.pytorch'))
 
 def disparity_estimation(tensorImage):
-	intWidth = tensorImage.size(3)
-	intHeight = tensorImage.size(2)
+	intWidth = tensorImage.shape[3]
+	intHeight = tensorImage.shape[2]
 
 	dblRatio = float(intWidth) / float(intHeight)
 

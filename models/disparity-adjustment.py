@@ -1,15 +1,15 @@
 moduleMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).cuda().eval()
 
 def disparity_adjustment(tensorImage, tensorDisparity):
-	assert(tensorImage.size(0) == 1)
-	assert(tensorDisparity.size(0) == 1)
+	assert(tensorImage.shape[0] == 1)
+	assert(tensorDisparity.shape[0] == 1)
 
 	boolUsed = {}
 	tensorMasks = []
 
 	objectPredictions = moduleMaskrcnn([ tensorImage[ 0, [ 2, 0, 1 ], :, : ] ])[0]
 
-	for intMask in range(objectPredictions['masks'].size(0)):
+	for intMask in range(objectPredictions['masks'].shape[0]):
 		if intMask in boolUsed:
 			continue
 
@@ -28,7 +28,7 @@ def disparity_adjustment(tensorImage, tensorDisparity):
 			continue
 		# end
 
-		for intMerge in range(objectPredictions['masks'].size(0)):
+		for intMerge in range(objectPredictions['masks'].shape[0]):
 			if intMerge in boolUsed:
 				continue
 
@@ -53,7 +53,7 @@ def disparity_adjustment(tensorImage, tensorDisparity):
 		tensorMasks.append(tensorMask)
 	# end
 
-	tensorAdjusted = torch.nn.functional.interpolate(input=tensorDisparity, size=(tensorImage.size(2), tensorImage.size(3)), mode='bilinear', align_corners=False)
+	tensorAdjusted = torch.nn.functional.interpolate(input=tensorDisparity, size=(tensorImage.shape[2], tensorImage.shape[3]), mode='bilinear', align_corners=False)
 
 	for tensorAdjust in tensorMasks:
 		tensorPlane = tensorAdjusted * tensorAdjust
@@ -69,5 +69,5 @@ def disparity_adjustment(tensorImage, tensorDisparity):
 		tensorAdjusted = ((1.0 - tensorAdjust) * tensorAdjusted) + (tensorAdjust * tensorPlane[:, :, int(round(intTop + (0.97 * (intBottom - intTop)))):, :].max())
 	# end
 
-	return torch.nn.functional.interpolate(input=tensorAdjusted, size=(tensorDisparity.size(2), tensorDisparity.size(3)), mode='bilinear', align_corners=False)
+	return torch.nn.functional.interpolate(input=tensorAdjusted, size=(tensorDisparity.shape[2], tensorDisparity.shape[3]), mode='bilinear', align_corners=False)
 # end

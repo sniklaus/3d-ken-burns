@@ -200,10 +200,6 @@ def process_kenburns(objectSettings):
 
 ##########################################################
 
-class Stream:
-	ptr = torch.cuda.current_stream().cuda_stream
-# end
-
 def preprocess_kernel(strKernel, objectVariables):
 	strKernel = '''
 		#include <samples/common/inc/helper_math.h>
@@ -307,11 +303,11 @@ def launch_kernel(strFunction, strKernel):
 # end
 
 def depth_to_points(tensorDepth, dblFocal):
-	tensorHorizontal = torch.linspace((-0.5 * tensorDepth.size(3)) + 0.5, (0.5 * tensorDepth.size(3)) - 0.5, tensorDepth.size(3)).view(1, 1, 1, tensorDepth.size(3)).expand(tensorDepth.size(0), -1, tensorDepth.size(2), -1)
+	tensorHorizontal = torch.linspace((-0.5 * tensorDepth.shape[3]) + 0.5, (0.5 * tensorDepth.shape[3]) - 0.5, tensorDepth.shape[3]).view(1, 1, 1, tensorDepth.shape[3]).expand(tensorDepth.shape[0], -1, tensorDepth.shape[2], -1)
 	tensorHorizontal = tensorHorizontal * (1.0 / dblFocal)
 	tensorHorizontal = tensorHorizontal.type_as(tensorDepth)
 
-	tensorVertical = torch.linspace((-0.5 * tensorDepth.size(2)) + 0.5, (0.5 * tensorDepth.size(2)) - 0.5, tensorDepth.size(2)).view(1, 1, tensorDepth.size(2), 1).expand(tensorDepth.size(0), -1, -1, tensorDepth.size(3))
+	tensorVertical = torch.linspace((-0.5 * tensorDepth.shape[2]) + 0.5, (0.5 * tensorDepth.shape[2]) - 0.5, tensorDepth.shape[2]).view(1, 1, tensorDepth.shape[2], 1).expand(tensorDepth.shape[0], -1, -1, tensorDepth.shape[3])
 	tensorVertical = tensorVertical * (1.0 / dblFocal)
 	tensorVertical = tensorVertical.type_as(tensorDepth)
 
@@ -322,9 +318,9 @@ def spatial_filter(tensorInput, strType):
 	tensorOutput = None
 
 	if strType == 'laplacian':
-		tensorLaplacian = tensorInput.new_zeros(tensorInput.size(1), tensorInput.size(1), 3, 3)
+		tensorLaplacian = tensorInput.new_zeros(tensorInput.shape[1], tensorInput.shape[1], 3, 3)
 
-		for intKernel in range(tensorInput.size(1)):
+		for intKernel in range(tensorInput.shape[1]):
 			tensorLaplacian[intKernel, intKernel, 0, 1] = -1.0
 			tensorLaplacian[intKernel, intKernel, 0, 2] = -1.0
 			tensorLaplacian[intKernel, intKernel, 1, 1] = 4.0
@@ -338,13 +334,13 @@ def spatial_filter(tensorInput, strType):
 	elif strType == 'median-3':
 		tensorOutput = torch.nn.functional.pad(input=tensorInput, pad=[ 1, 1, 1, 1 ], mode='reflect')
 		tensorOutput = tensorOutput.unfold(2, 3, 1).unfold(3, 3, 1)
-		tensorOutput = tensorOutput.contiguous().view(tensorOutput.size(0), tensorOutput.size(1), tensorOutput.size(2), tensorOutput.size(3), 3 * 3)
+		tensorOutput = tensorOutput.contiguous().view(tensorOutput.shape[0], tensorOutput.shape[1], tensorOutput.shape[2], tensorOutput.shape[3], 3 * 3)
 		tensorOutput = tensorOutput.median(-1, False)[0]
 
 	elif strType == 'median-5':
 		tensorOutput = torch.nn.functional.pad(input=tensorInput, pad=[ 2, 2, 2, 2 ], mode='reflect')
 		tensorOutput = tensorOutput.unfold(2, 5, 1).unfold(3, 5, 1)
-		tensorOutput = tensorOutput.contiguous().view(tensorOutput.size(0), tensorOutput.size(1), tensorOutput.size(2), tensorOutput.size(3), 5 * 5)
+		tensorOutput = tensorOutput.contiguous().view(tensorOutput.shape[0], tensorOutput.shape[1], tensorOutput.shape[2], tensorOutput.shape[3], 5 * 5)
 		tensorOutput = tensorOutput.median(-1, False)[0]
 
 	# end
@@ -353,12 +349,12 @@ def spatial_filter(tensorInput, strType):
 # end
 
 def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, dblBaseline):
-	tensorData = torch.cat([ tensorData, tensorData.new_ones([ tensorData.size(0), 1, tensorData.size(2) ]) ], 1)
+	tensorData = torch.cat([ tensorData, tensorData.new_ones([ tensorData.shape[0], 1, tensorData.shape[2] ]) ], 1)
 
-	tensorZee = tensorInput.new_zeros([ tensorData.size(0), 1, intHeight, intWidth ]).fill_(1000000.0)
-	tensorOutput = tensorInput.new_zeros([ tensorData.size(0), tensorData.size(1), intHeight, intWidth ])
+	tensorZee = tensorInput.new_zeros([ tensorData.shape[0], 1, intHeight, intWidth ]).fill_(1000000.0)
+	tensorOutput = tensorInput.new_zeros([ tensorData.shape[0], tensorData.shape[1], intHeight, intWidth ])
 
-	n = tensorInput.size(0) * tensorInput.size(2)
+	n = tensorInput.shape[0] * tensorInput.shape[2]
 	launch_kernel('kernel_pointrender_updateZee', preprocess_kernel('''
 		extern "C" __global__ void kernel_pointrender_updateZee(
 			const int n,
@@ -444,8 +440,7 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tensorInput.data_ptr(), tensorData.data_ptr(), tensorZee.data_ptr() ],
-		stream=Stream
+		args=[ n, tensorInput.data_ptr(), tensorData.data_ptr(), tensorZee.data_ptr() ]
 	)
 
 	n = tensorZee.nelement()
@@ -456,10 +451,12 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 			const float* data,
 			float* zee
 		) { for (int intIndex = (blockIdx.x * blockDim.x) + threadIdx.x; intIndex < n; intIndex += blockDim.x * gridDim.x) {
-			const int intSample = ( intIndex / SIZE_3(zee) / SIZE_2(zee) / SIZE_1(zee) ) % SIZE_0(zee);
-			const int intDepth  = ( intIndex / SIZE_3(zee) / SIZE_2(zee)                ) % SIZE_1(zee);
-			const int intY      = ( intIndex / SIZE_3(zee)                               ) % SIZE_2(zee);
-			const int intX      = ( intIndex                                              ) % SIZE_3(zee);
+			const int intN = ( intIndex / SIZE_3(zee) / SIZE_2(zee) / SIZE_1(zee) ) % SIZE_0(zee);
+			const int intC = ( intIndex / SIZE_3(zee) / SIZE_2(zee)               ) % SIZE_1(zee);
+			const int intY = ( intIndex / SIZE_3(zee)                             ) % SIZE_2(zee);
+			const int intX = ( intIndex                                           ) % SIZE_3(zee);
+
+			assert(SIZE_1(intC) == 1);
 
 			int intCount = 0;
 			float dblSum = 0.0;
@@ -481,17 +478,17 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 
 				}
 
-				if (VALUE_4(zee, intSample, 0, intY, intX) >= VALUE_4(zee, intSample, 0, intOneY, intOneX) + 1.0) {
-					if (VALUE_4(zee, intSample, 0, intY, intX) >= VALUE_4(zee, intSample, 0, intTwoY, intTwoX) + 1.0) {
+				if (VALUE_4(zee, intN, intC, intY, intX) >= VALUE_4(zee, intN, intC, intOneY, intOneX) + 1.0) {
+					if (VALUE_4(zee, intN, intC, intY, intX) >= VALUE_4(zee, intN, intC, intTwoY, intTwoX) + 1.0) {
 						intCount += 2;
-						dblSum += VALUE_4(zee, intSample, 0, intOneY, intOneX);
-						dblSum += VALUE_4(zee, intSample, 0, intTwoY, intTwoX);
+						dblSum += VALUE_4(zee, intN, intC, intOneY, intOneX);
+						dblSum += VALUE_4(zee, intN, intC, intTwoY, intTwoX);
 					}
 				}
 			}
 
 			if (intCount > 0) {
-				zee[OFFSET_4(zee, intSample, 0, intY, intX)] = min(VALUE_4(zee, intSample, 0, intY, intX), dblSum / intCount);
+				zee[OFFSET_4(zee, intN, intC, intY, intX)] = min(VALUE_4(zee, intN, intC, intY, intX), dblSum / intCount);
 			}
 		} }
 	''', {
@@ -505,11 +502,10 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tensorInput.data_ptr(), tensorData.data_ptr(), tensorZee.data_ptr() ],
-		stream=Stream
+		args=[ n, tensorInput.data_ptr(), tensorData.data_ptr(), tensorZee.data_ptr() ]
 	)
 
-	n = tensorInput.size(0) * tensorInput.size(2)
+	n = tensorInput.shape[0] * tensorInput.shape[2]
 	launch_kernel('kernel_pointrender_updateOutput', preprocess_kernel('''
 		extern "C" __global__ void kernel_pointrender_updateOutput(
 			const int n,
@@ -607,8 +603,7 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tensorInput.data_ptr(), tensorData.data_ptr(), tensorZee.data_ptr(), tensorOutput.data_ptr() ],
-		stream=Stream
+		args=[ n, tensorInput.data_ptr(), tensorData.data_ptr(), tensorZee.data_ptr(), tensorOutput.data_ptr() ]
 	)
 
 	return tensorOutput[:, :-1, :, :] / (tensorOutput[:, -1:, :, :] + 0.0000001), tensorOutput[:, -1:, :, :].detach().clone()
@@ -617,7 +612,7 @@ def render_pointcloud(tensorInput, tensorData, intWidth, intHeight, dblFocal, db
 def fill_disocclusion(tensorInput, tensorDepth):
 	tensorOutput = tensorInput.clone()
 
-	n = tensorInput.size(0) * tensorInput.size(2) * tensorInput.size(3)
+	n = tensorInput.shape[0] * tensorInput.shape[2] * tensorInput.shape[3]
 	launch_kernel('kernel_discfill_updateOutput', preprocess_kernel('''
 		extern "C" __global__ void kernel_discfill_updateOutput(
 			const int n,
@@ -713,8 +708,7 @@ def fill_disocclusion(tensorInput, tensorDepth):
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tensorInput.data_ptr(), tensorDepth.data_ptr(), tensorOutput.data_ptr() ],
-		stream=Stream
+		args=[ n, tensorInput.data_ptr(), tensorDepth.data_ptr(), tensorOutput.data_ptr() ]
 	)
 
 	return tensorOutput
