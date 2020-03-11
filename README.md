@@ -23,7 +23,7 @@ To start the interface that allows you to manually adjust the camera path, use t
 python interface.py
 ```
 
-To run the depth estimation to obtain the raw depth estimate, use the following command. Please note that this script does not perform the depth adjustment, I will add it to the script at a later time should people end up being interested in it.
+To run the depth estimation to obtain the raw depth estimate, use the following command. Please note that this script does not perform the depth adjustment, see [#22](https://github.com/sniklaus/3d-ken-burns/issues/22) for information on how to add it.
 
 ```
 python depthestim.py --in ./images/doublestrike.jpg --out ./depthestim.npy
