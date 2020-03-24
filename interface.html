@@ -7,13 +7,13 @@
 
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/2.24.0/load-image.all.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/2.26.0/load-image.all.min.js"></script>
 
-		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.5/cropper.min.css" />
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.5/cropper.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.6/cropper.min.css" />
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.6/cropper.min.js"></script>
 
-		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" />
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
 		<style type="text/css">
 			.btn:focus, .btn:active {
 				box-shadow:none !important;
@@ -21,7 +21,7 @@
 			}
 		</style>
 
-		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css" />
+		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" />
 	</head>
 	<body style="background-color:#232323;">
 		<div style="left:50%; position:absolute; top:50%; transform:translate(-50%, -50%);">
@@ -59,32 +59,32 @@
 
 		<div style="bottom:16px; position:fixed; right:16px;">
 			<button class="btn btn-primary" id="autozoom" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-magic"></i></button>
-			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa fa-folder-open"></i><input id="file" type="file" multiple="multiple" style="bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
+			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa fa-folder-open"></i><input id="file" type="file" style="bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
 			<a class="btn btn-primary" id="save" href="/get_result" target="_blank" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-save"></i></a>
 		</div>
 
 		<script type="text/javascript">
-			var objectFrom = null;
-			var objectTo = null;
+			var objFrom = null;
+			var objTo = null;
 		</script>
 
 		<script type="text/javascript">
 			jQuery(window.document)
-				.on('keydown', function(objectEvent) {
-					if (objectEvent.keyCode === 49) {
+				.on('keydown', function(objEvent) {
+					if (objEvent.keyCode === 49) {
 						console.log(JSON.stringify({
 							'strFile': jQuery('#file').get(0).files[0].name,
-							'objectFrom': {
-								'dblCenterU': objectFrom.getData().x + (0.5 * objectFrom.getData().width),
-								'dblCenterV': objectFrom.getData().y + (0.5 * objectFrom.getData().height),
-								'intCropWidth': objectFrom.getData().width,
-								'intCropHeight': objectFrom.getData().height
+							'objFrom': {
+								'fltCenterU': objFrom.getData().x + (0.5 * objFrom.getData().width),
+								'fltCenterV': objFrom.getData().y + (0.5 * objFrom.getData().height),
+								'intCropWidth': objFrom.getData().width,
+								'intCropHeight': objFrom.getData().height
 							},
-							'objectTo': {
-								'dblCenterU': objectTo.getData().x + (0.5 * objectTo.getData().width),
-								'dblCenterV': objectTo.getData().y + (0.5 * objectTo.getData().height),
-								'intCropWidth': objectTo.getData().width,
-								'intCropHeight': objectTo.getData().height
+							'objTo': {
+								'fltCenterU': objTo.getData().x + (0.5 * objTo.getData().width),
+								'fltCenterV': objTo.getData().y + (0.5 * objTo.getData().height),
+								'intCropWidth': objTo.getData().width,
+								'intCropHeight': objTo.getData().height
 							}
 						}));
 					}
@@ -110,22 +110,22 @@
 					jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 					jQuery.post('/update_mode', { 'strMode': 'manual' });
 
-					jQuery.post('/autozoom', {}, function(objectData) {
-						objectFrom.setData({
-							'x': objectData.objectFrom.dblCenterU - (objectData.objectFrom.intCropWidth / 2.0),
-							'y': objectData.objectFrom.dblCenterV - (objectData.objectFrom.intCropHeight / 2.0),
-							'width': objectData.objectFrom.intCropWidth,
-							'height': objectData.objectFrom.intCropHeight,
+					jQuery.post('/autozoom', {}, function(objData) {
+						objFrom.setData({
+							'x': objData.objFrom.fltCenterU - (objData.objFrom.intCropWidth / 2.0),
+							'y': objData.objFrom.fltCenterV - (objData.objFrom.intCropHeight / 2.0),
+							'width': objData.objFrom.intCropWidth,
+							'height': objData.objFrom.intCropHeight,
 							'rotate': 0.0,
 							'scaleX': 1.0,
 							'scaleY': 1.0
 						});
 
-						objectTo.setData({
-							'x': objectData.objectTo.dblCenterU - (objectData.objectTo.intCropWidth / 2.0),
-							'y': objectData.objectTo.dblCenterV - (objectData.objectTo.intCropHeight / 2.0),
-							'width': objectData.objectTo.intCropWidth,
-							'height': objectData.objectTo.intCropHeight,
+						objTo.setData({
+							'x': objData.objTo.fltCenterU - (objData.objTo.intCropWidth / 2.0),
+							'y': objData.objTo.fltCenterV - (objData.objTo.intCropHeight / 2.0),
+							'width': objData.objTo.intCropWidth,
+							'height': objData.objTo.intCropHeight,
 							'rotate': 0.0,
 							'scaleX': 1.0,
 							'scaleY': 1.0
@@ -140,38 +140,38 @@
 			;
 
 			jQuery('#file')
-				.on('click', function(objectEvent) {
-					objectEvent.stopPropagation();
+				.on('click', function(objEvent) {
+					objEvent.stopPropagation();
 				})
-				.on('change', function(objectEvent) {
-					if (objectEvent.target.files.length !== 1) {
+				.on('change', function(objEvent) {
+					if (objEvent.target.files.length !== 1) {
 						return;
 					}
 
-					loadImage(objectEvent.target.files[0], function(objectImage) {
+					loadImage(objEvent.target.files[0], function(objImage) {
 						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 						jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 						jQuery('#from, #to')
-							.attr('src', objectImage.toDataURL())
+							.attr('src', objImage.toDataURL())
 						;
 
-						if (objectFrom !== null) {
-							objectFrom.destroy();
+						if (objFrom !== null) {
+							objFrom.destroy();
 						}
 
-						if (objectTo !== null) {
-							objectTo.destroy();
+						if (objTo !== null) {
+							objTo.destroy();
 						}
 
-						objectFrom = new Cropper(jQuery('#from').get(0), {
+						objFrom = new Cropper(jQuery('#from').get(0), {
 							'aspectRatio': 4.0 / 3.0,
 							'guides': false,
 							'minCropBoxWidth': 120.0,
 							'viewMode': 3,
 							'zoomOnWheel': false,
 							'ready': function() {
-								objectFrom.setData({
+								objFrom.setData({
 									'x': (1024 - 900) / 2,
 									'y': (768 - 675) / 2,
 									'width': 900,
@@ -181,29 +181,29 @@
 									'scaleY': 1.0
 								});
 
-								objectFrom.options.crop();
+								objFrom.options.crop();
 							},
 							'crop': function() {
 								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 								jQuery.post('/update_from', {
-									'dblCenterU': objectFrom.getData().x + (0.5 * objectFrom.getData().width),
-									'dblCenterV': objectFrom.getData().y + (0.5 * objectFrom.getData().height),
-									'intCropWidth': Math.round(objectFrom.getData().width),
-									'intCropHeight': Math.round(objectFrom.getData().height)
+									'fltCenterU': objFrom.getData().x + (0.5 * objFrom.getData().width),
+									'fltCenterV': objFrom.getData().y + (0.5 * objFrom.getData().height),
+									'intCropWidth': Math.round(objFrom.getData().width),
+									'intCropHeight': Math.round(objFrom.getData().height)
 								});
 							}
 						});
 
-						objectTo = new Cropper(jQuery('#to').get(0), {
+						objTo = new Cropper(jQuery('#to').get(0), {
 							'aspectRatio': 4.0 / 3.0,
 							'guides': false,
 							'minCropBoxWidth': 120.0,
 							'viewMode': 3,
 							'zoomOnWheel': false,
 							'ready': function() {
-								objectTo.setData({
+								objTo.setData({
 									'x': (1024 - 900) / 2,
 									'y': (768 - 675) / 2,
 									'width': 900,
@@ -213,24 +213,24 @@
 									'scaleY': 1.0
 								});
 
-								objectTo.options.crop();
+								objTo.options.crop();
 							},
 							'crop': function() {
 								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 								jQuery.post('/update_to', {
-									'dblCenterU': objectTo.getData().x + (0.5 * objectTo.getData().width),
-									'dblCenterV': objectTo.getData().y + (0.5 * objectTo.getData().height),
-									'intCropWidth': Math.round(objectTo.getData().width),
-									'intCropHeight': Math.round(objectTo.getData().height)
+									'fltCenterU': objTo.getData().x + (0.5 * objTo.getData().width),
+									'fltCenterV': objTo.getData().y + (0.5 * objTo.getData().height),
+									'intCropWidth': Math.round(objTo.getData().width),
+									'intCropHeight': Math.round(objTo.getData().height)
 								});
 							}
 						});
 
 						jQuery.post('/load_image', {
-							'strFile': objectEvent.target.files[0].name,
-							'strData': objectImage.toDataURL()
+							'strFile': objEvent.target.files[0].name,
+							'strData': objImage.toDataURL()
 						})
 					}, {
 						'canvas': true,

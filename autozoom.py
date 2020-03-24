@@ -10,6 +10,7 @@ import flask
 import getopt
 import gevent
 import gevent.pywsgi
+import glob
 import h5py
 import io
 import math
@@ -38,7 +39,7 @@ torch.backends.cudnn.enabled = True # make sure to use cudnn for computational p
 
 ##########################################################
 
-objectCommon = {}
+objCommon = {}
 
 exec(open('./common.py', 'r').read())
 
@@ -60,39 +61,39 @@ for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:]
 ##########################################################
 
 if __name__ == '__main__':
-	numpyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
+	npyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
 
-	intWidth = numpyImage.shape[1]
-	intHeight = numpyImage.shape[0]
+	intWidth = npyImage.shape[1]
+	intHeight = npyImage.shape[0]
 
-	dblRatio = float(intWidth) / float(intHeight)
+	fltRatio = float(intWidth) / float(intHeight)
 
-	intWidth = min(int(1024 * dblRatio), 1024)
-	intHeight = min(int(1024 / dblRatio), 1024)
+	intWidth = min(int(1024 * fltRatio), 1024)
+	intHeight = min(int(1024 / fltRatio), 1024)
 
-	numpyImage = cv2.resize(src=numpyImage, dsize=(intWidth, intHeight), fx=0.0, fy=0.0, interpolation=cv2.INTER_AREA)
+	npyImage = cv2.resize(src=npyImage, dsize=(intWidth, intHeight), fx=0.0, fy=0.0, interpolation=cv2.INTER_AREA)
 
-	process_load(numpyImage, {})
+	process_load(npyImage, {})
 
-	objectFrom = {
-		'dblCenterU': intWidth / 2.0,
-		'dblCenterV': intHeight / 2.0,
+	objFrom = {
+		'fltCenterU': intWidth / 2.0,
+		'fltCenterV': intHeight / 2.0,
 		'intCropWidth': int(math.floor(0.97 * intWidth)),
 		'intCropHeight': int(math.floor(0.97 * intHeight))
 	}
 
-	objectTo = process_autozoom({
-		'dblShift': 100.0,
-		'dblZoom': 1.25,
-		'objectFrom': objectFrom
+	objTo = process_autozoom({
+		'fltShift': 100.0,
+		'fltZoom': 1.25,
+		'objFrom': objFrom
 	})
 
-	numpyResult = process_kenburns({
-		'dblSteps': numpy.linspace(0.0, 1.0, 75).tolist(),
-		'objectFrom': objectFrom,
-		'objectTo': objectTo,
+	npyResult = process_kenburns({
+		'fltSteps': numpy.linspace(0.0, 1.0, 75).tolist(),
+		'objFrom': objFrom,
+		'objTo': objTo,
 		'boolInpaint': True
 	})
 
-	moviepy.editor.ImageSequenceClip(sequence=[ numpyFrame[:, :, ::-1] for numpyFrame in numpyResult + list(reversed(numpyResult))[1:] ], fps=25).write_videofile(arguments_strOut)
+	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:] ], fps=25).write_videofile(arguments_strOut)
 # end

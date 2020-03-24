@@ -28,12 +28,12 @@ class Basic(torch.nn.Module):
 		# end
 	# end
 
-	def forward(self, tensorInput):
+	def forward(self, tenInput):
 		if self.moduleShortcut is None:
-			return self.moduleMain(tensorInput) + tensorInput
+			return self.moduleMain(tenInput) + tenInput
 
 		elif self.moduleShortcut is not None:
-			return self.moduleMain(tensorInput) + self.moduleShortcut(tensorInput)
+			return self.moduleMain(tenInput) + self.moduleShortcut(tenInput)
 
 		# end
 	# end
@@ -51,8 +51,8 @@ class Downsample(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		return self.moduleMain(tensorInput)
+	def forward(self, tenInput):
+		return self.moduleMain(tenInput)
 	# end
 # end
 
@@ -69,8 +69,8 @@ class Upsample(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		return self.moduleMain(tensorInput)
+	def forward(self, tenInput):
+		return self.moduleMain(tenInput)
 	# end
 # end
 
@@ -90,40 +90,40 @@ class Refine(torch.nn.Module):
 		self.moduleRefine = Basic('conv-relu-conv', [ 24, 24, 1 ])
 	# end
 
-	def forward(self, tensorImage, tensorDisparity):
-		tensorMean = [ tensorImage.view(tensorImage.shape[0], -1).mean(1, True).view(tensorImage.shape[0], 1, 1, 1), tensorDisparity.view(tensorDisparity.shape[0], -1).mean(1, True).view(tensorDisparity.shape[0], 1, 1, 1) ]
-		tensorStd = [ tensorImage.view(tensorImage.shape[0], -1).std(1, True).view(tensorImage.shape[0], 1, 1, 1), tensorDisparity.view(tensorDisparity.shape[0], -1).std(1, True).view(tensorDisparity.shape[0], 1, 1, 1) ]
+	def forward(self, tenImage, tenDisparity):
+		tenMean = [ tenImage.view(tenImage.shape[0], -1).mean(1, True).view(tenImage.shape[0], 1, 1, 1), tenDisparity.view(tenDisparity.shape[0], -1).mean(1, True).view(tenDisparity.shape[0], 1, 1, 1) ]
+		tenStd = [ tenImage.view(tenImage.shape[0], -1).std(1, True).view(tenImage.shape[0], 1, 1, 1), tenDisparity.view(tenDisparity.shape[0], -1).std(1, True).view(tenDisparity.shape[0], 1, 1, 1) ]
 
-		tensorImage = tensorImage.clone()
-		tensorImage -= tensorMean[0]
-		tensorImage /= tensorStd[0] + 0.0000001
+		tenImage = tenImage.clone()
+		tenImage -= tenMean[0]
+		tenImage /= tenStd[0] + 0.0000001
 
-		tensorDisparity = tensorDisparity.clone()
-		tensorDisparity -= tensorMean[1]
-		tensorDisparity /= tensorStd[1] + 0.0000001
+		tenDisparity = tenDisparity.clone()
+		tenDisparity -= tenMean[1]
+		tenDisparity /= tenStd[1] + 0.0000001
 
-		tensorImageOne = self.moduleImageOne(tensorImage)
-		tensorImageTwo = self.moduleImageTwo(tensorImageOne)
-		tensorImageThr = self.moduleImageThr(tensorImageTwo)
+		tenImageOne = self.moduleImageOne(tenImage)
+		tenImageTwo = self.moduleImageTwo(tenImageOne)
+		tenImageThr = self.moduleImageThr(tenImageTwo)
 
-		tensorUpsample = self.moduleDisparityOne(tensorDisparity)
-		if tensorUpsample.shape != tensorImageThr.shape: tensorUpsample = torch.nn.functional.interpolate(input=tensorUpsample, size=(tensorImageThr.shape[2], tensorImageThr.shape[3]), mode='bilinear', align_corners=False) # not ideal
-		tensorUpsample = self.moduleDisparityTwo(torch.cat([ tensorImageThr, tensorUpsample ], 1)); tensorImageThr = None
-		if tensorUpsample.shape != tensorImageTwo.shape: tensorUpsample = torch.nn.functional.interpolate(input=tensorUpsample, size=(tensorImageTwo.shape[2], tensorImageTwo.shape[3]), mode='bilinear', align_corners=False) # not ideal
-		tensorUpsample = self.moduleDisparityThr(torch.cat([ tensorImageTwo, tensorUpsample ], 1)); tensorImageTwo = None
-		if tensorUpsample.shape != tensorImageOne.shape: tensorUpsample = torch.nn.functional.interpolate(input=tensorUpsample, size=(tensorImageOne.shape[2], tensorImageOne.shape[3]), mode='bilinear', align_corners=False) # not ideal
-		tensorUpsample = self.moduleDisparityFou(torch.cat([ tensorImageOne, tensorUpsample ], 1)); tensorImageOne = None
+		tenUpsample = self.moduleDisparityOne(tenDisparity)
+		if tenUpsample.shape != tenImageThr.shape: tenUpsample = torch.nn.functional.interpolate(input=tenUpsample, size=(tenImageThr.shape[2], tenImageThr.shape[3]), mode='bilinear', align_corners=False) # not ideal
+		tenUpsample = self.moduleDisparityTwo(torch.cat([ tenImageThr, tenUpsample ], 1)); tenImageThr = None
+		if tenUpsample.shape != tenImageTwo.shape: tenUpsample = torch.nn.functional.interpolate(input=tenUpsample, size=(tenImageTwo.shape[2], tenImageTwo.shape[3]), mode='bilinear', align_corners=False) # not ideal
+		tenUpsample = self.moduleDisparityThr(torch.cat([ tenImageTwo, tenUpsample ], 1)); tenImageTwo = None
+		if tenUpsample.shape != tenImageOne.shape: tenUpsample = torch.nn.functional.interpolate(input=tenUpsample, size=(tenImageOne.shape[2], tenImageOne.shape[3]), mode='bilinear', align_corners=False) # not ideal
+		tenUpsample = self.moduleDisparityFou(torch.cat([ tenImageOne, tenUpsample ], 1)); tenImageOne = None
 
-		tensorRefine = self.moduleRefine(tensorUpsample)
-		tensorRefine *= tensorStd[1] + 0.0000001
-		tensorRefine += tensorMean[1]
+		tenRefine = self.moduleRefine(tenUpsample)
+		tenRefine *= tenStd[1] + 0.0000001
+		tenRefine += tenMean[1]
 
-		return torch.nn.functional.threshold(input=tensorRefine, threshold=0.0, value=0.0)
+		return torch.nn.functional.threshold(input=tenRefine, threshold=0.0, value=0.0)
 	# end
 # end
 
 moduleRefine = Refine().cuda().eval(); moduleRefine.load_state_dict(torch.load('./models/disparity-refinement.pytorch'))
 
-def disparity_refinement(tensorImage, tensorDisparity):
-	return moduleRefine(tensorImage, tensorDisparity)
+def disparity_refinement(tenImage, tenDisparity):
+	return moduleRefine(tenImage, tenDisparity)
 # end

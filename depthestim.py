@@ -10,6 +10,7 @@ import flask
 import getopt
 import gevent
 import gevent.pywsgi
+import glob
 import h5py
 import io
 import math
@@ -38,7 +39,7 @@ torch.backends.cudnn.enabled = True # make sure to use cudnn for computational p
 
 ##########################################################
 
-objectCommon = {}
+objCommon = {}
 
 exec(open('./common.py', 'r').read())
 
@@ -60,21 +61,21 @@ for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:]
 ##########################################################
 
 if __name__ == '__main__':
-	numpyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
+	npyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
 
-	dblFocal = max(numpyImage.shape[0], numpyImage.shape[1]) / 2.0
-	dblBaseline = 40.0
+	fltFocal = max(npyImage.shape[0], npyImage.shape[1]) / 2.0
+	fltBaseline = 40.0
 
-	tensorImage = torch.FloatTensor(numpyImage.transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
-	tensorDisparity = disparity_estimation(tensorImage)
-	tensorDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tensorImage, size=(tensorDisparity.shape[2] * 4, tensorDisparity.shape[3] * 4), mode='bilinear', align_corners=False), tensorDisparity)
-	tensorDisparity = torch.nn.functional.interpolate(input=tensorDisparity, size=(tensorImage.shape[2], tensorImage.shape[3]), mode='bilinear', align_corners=False) * (max(tensorImage.shape[2], tensorImage.shape[3]) / 256.0)
-	tensorDepth = (dblFocal * dblBaseline) / (tensorDisparity + 0.0000001)
+	tenImage = torch.FloatTensor(npyImage.transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
+	tenDisparity = disparity_estimation(tenImage)
+	tenDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tenImage, size=(tenDisparity.shape[2] * 4, tenDisparity.shape[3] * 4), mode='bilinear', align_corners=False), tenDisparity)
+	tenDisparity = torch.nn.functional.interpolate(input=tenDisparity, size=(tenImage.shape[2], tenImage.shape[3]), mode='bilinear', align_corners=False) * (max(tenImage.shape[2], tenImage.shape[3]) / 256.0)
+	tenDepth = (fltFocal * fltBaseline) / (tenDisparity + 0.0000001)
 
-	numpyDisparity = tensorDisparity[0, 0, :, :].cpu().numpy()
-	numpyDepth = tensorDepth[0, 0, :, :].cpu().numpy()
+	npyDisparity = tenDisparity[0, 0, :, :].cpu().numpy()
+	npyDepth = tenDepth[0, 0, :, :].cpu().numpy()
 
-	cv2.imwrite(filename=arguments_strOut.replace('.npy', '.png'), img=(numpyDisparity / dblBaseline * 255.0).clip(0.0, 255.0).astype(numpy.uint8))
+	cv2.imwrite(filename=arguments_strOut.replace('.npy', '.png'), img=(npyDisparity / fltBaseline * 255.0).clip(0.0, 255.0).astype(numpy.uint8))
 
-	numpy.save(arguments_strOut, numpyDepth)
+	numpy.save(arguments_strOut, npyDepth)
 # end

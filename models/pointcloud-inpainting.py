@@ -28,12 +28,12 @@ class Basic(torch.nn.Module):
 		# end
 	# end
 
-	def forward(self, tensorInput):
+	def forward(self, tenInput):
 		if self.moduleShortcut is None:
-			return self.moduleMain(tensorInput) + tensorInput
+			return self.moduleMain(tenInput) + tenInput
 
 		elif self.moduleShortcut is not None:
-			return self.moduleMain(tensorInput) + self.moduleShortcut(tensorInput)
+			return self.moduleMain(tenInput) + self.moduleShortcut(tenInput)
 
 		# end
 	# end
@@ -51,8 +51,8 @@ class Downsample(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		return self.moduleMain(tensorInput)
+	def forward(self, tenInput):
+		return self.moduleMain(tenInput)
 	# end
 # end
 
@@ -69,8 +69,8 @@ class Upsample(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		return self.moduleMain(tensorInput)
+	def forward(self, tenInput):
+		return self.moduleMain(tenInput)
 	# end
 # end
 
@@ -109,90 +109,90 @@ class Inpaint(torch.nn.Module):
 		self.moduleDisparity = Basic('conv-relu-conv', [ 32, 32, 1 ])
 	# end
 
-	def forward(self, tensorImage, tensorDisparity, tensorShift):
-		tensorDepth = (objectCommon['dblFocal'] * objectCommon['dblBaseline']) / (tensorDisparity + 0.0000001)
-		tensorValid = (spatial_filter(tensorDisparity / tensorDisparity.max(), 'laplacian').abs() < 0.03).float()
-		tensorPoints = depth_to_points(tensorDepth * tensorValid, objectCommon['dblFocal'])
-		tensorPoints = tensorPoints.view(1, 3, -1)
+	def forward(self, tenImage, tenDisparity, tenShift):
+		tenDepth = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDisparity + 0.0000001)
+		tenValid = (spatial_filter(tenDisparity / tenDisparity.max(), 'laplacian').abs() < 0.03).float()
+		tenPoints = depth_to_points(tenDepth * tenValid, objCommon['fltFocal'])
+		tenPoints = tenPoints.view(1, 3, -1)
 
-		tensorMean = [ tensorImage.view(tensorImage.shape[0], -1).mean(1, True).view(tensorImage.shape[0], 1, 1, 1), tensorDisparity.view(tensorDisparity.shape[0], -1).mean(1, True).view(tensorDisparity.shape[0], 1, 1, 1) ]
-		tensorStd = [ tensorImage.view(tensorImage.shape[0], -1).std(1, True).view(tensorImage.shape[0], 1, 1, 1), tensorDisparity.view(tensorDisparity.shape[0], -1).std(1, True).view(tensorDisparity.shape[0], 1, 1, 1) ]
+		tenMean = [ tenImage.view(tenImage.shape[0], -1).mean(1, True).view(tenImage.shape[0], 1, 1, 1), tenDisparity.view(tenDisparity.shape[0], -1).mean(1, True).view(tenDisparity.shape[0], 1, 1, 1) ]
+		tenStd = [ tenImage.view(tenImage.shape[0], -1).std(1, True).view(tenImage.shape[0], 1, 1, 1), tenDisparity.view(tenDisparity.shape[0], -1).std(1, True).view(tenDisparity.shape[0], 1, 1, 1) ]
 
-		tensorImage = tensorImage.clone()
-		tensorImage -= tensorMean[0]
-		tensorImage /= tensorStd[0] + 0.0000001
+		tenImage = tenImage.clone()
+		tenImage -= tenMean[0]
+		tenImage /= tenStd[0] + 0.0000001
 
-		tensorDisparity = tensorDisparity.clone()
-		tensorDisparity -= tensorMean[1]
-		tensorDisparity /= tensorStd[1] + 0.0000001
+		tenDisparity = tenDisparity.clone()
+		tenDisparity -= tenMean[1]
+		tenDisparity /= tenStd[1] + 0.0000001
 
-		tensorContext = self.moduleContext(torch.cat([ tensorImage, tensorDisparity ], 1))
+		tenContext = self.moduleContext(torch.cat([ tenImage, tenDisparity ], 1))
 
-		tensorRender, tensorExisting = render_pointcloud(tensorPoints + tensorShift, torch.cat([ tensorImage, tensorDisparity, tensorContext ], 1).view(1, 68, -1), objectCommon['intWidth'], objectCommon['intHeight'], objectCommon['dblFocal'], objectCommon['dblBaseline'])
+		tenRender, tenExisting = render_pointcloud(tenPoints + tenShift, torch.cat([ tenImage, tenDisparity, tenContext ], 1).view(1, 68, -1), objCommon['intWidth'], objCommon['intHeight'], objCommon['fltFocal'], objCommon['fltBaseline'])
 
-		tensorExisting = (tensorExisting > 0.0).float()
-		tensorExisting = tensorExisting * spatial_filter(tensorExisting, 'median-5')
-		tensorRender = tensorRender * tensorExisting.clone().detach()
+		tenExisting = (tenExisting > 0.0).float()
+		tenExisting = tenExisting * spatial_filter(tenExisting, 'median-5')
+		tenRender = tenRender * tenExisting.clone().detach()
 
-		tensorColumn = [ None, None, None, None ]
+		tenColumn = [ None, None, None, None ]
 
-		tensorColumn[0] = self.moduleInput(torch.cat([ tensorRender, tensorExisting ], 1))
-		tensorColumn[1] = self._modules['0x0 - 1x0'](tensorColumn[0])
-		tensorColumn[2] = self._modules['1x0 - 2x0'](tensorColumn[1])
-		tensorColumn[3] = self._modules['2x0 - 3x0'](tensorColumn[2])
+		tenColumn[0] = self.moduleInput(torch.cat([ tenRender, tenExisting ], 1))
+		tenColumn[1] = self._modules['0x0 - 1x0'](tenColumn[0])
+		tenColumn[2] = self._modules['1x0 - 2x0'](tenColumn[1])
+		tenColumn[3] = self._modules['2x0 - 3x0'](tenColumn[2])
 
 		intColumn = 1
-		for intRow in range(len(tensorColumn)):
-			tensorColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow])
+		for intRow in range(len(tenColumn)):
+			tenColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow])
 			if intRow != 0:
-				tensorColumn[intRow] += self._modules[str(intRow - 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow - 1])
+				tenColumn[intRow] += self._modules[str(intRow - 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow - 1])
 			# end
 		# end
 
 		intColumn = 2
-		for intRow in range(len(tensorColumn) -1, -1, -1):
-			tensorColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow])
-			if intRow != len(tensorColumn) - 1:
-				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
+		for intRow in range(len(tenColumn) -1, -1, -1):
+			tenColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow])
+			if intRow != len(tenColumn) - 1:
+				tenUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow + 1])
 
-				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tenUp.shape[2] != tenColumn[intRow].shape[2]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tenUp.shape[3] != tenColumn[intRow].shape[3]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
-				tensorColumn[intRow] += tensorUp
+				tenColumn[intRow] += tenUp
 			# end
 		# end
 
 		intColumn = 3
-		for intRow in range(len(tensorColumn) -1, -1, -1):
-			tensorColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow])
-			if intRow != len(tensorColumn) - 1:
-				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
+		for intRow in range(len(tenColumn) -1, -1, -1):
+			tenColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow])
+			if intRow != len(tenColumn) - 1:
+				tenUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow + 1])
 
-				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tenUp.shape[2] != tenColumn[intRow].shape[2]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tenUp.shape[3] != tenColumn[intRow].shape[3]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
-				tensorColumn[intRow] += tensorUp
+				tenColumn[intRow] += tenUp
 			# end
 		# end
 
-		tensorImage = self.moduleImage(tensorColumn[0])
-		tensorImage *= tensorStd[0] + 0.0000001
-		tensorImage += tensorMean[0]
+		tenImage = self.moduleImage(tenColumn[0])
+		tenImage *= tenStd[0] + 0.0000001
+		tenImage += tenMean[0]
 
-		tensorDisparity = self.moduleDisparity(tensorColumn[0])
-		tensorDisparity *= tensorStd[1] + 0.0000001
-		tensorDisparity += tensorMean[1]
+		tenDisparity = self.moduleDisparity(tenColumn[0])
+		tenDisparity *= tenStd[1] + 0.0000001
+		tenDisparity += tenMean[1]
 
 		return {
-			'tensorExisting': tensorExisting,
-			'tensorImage': tensorImage.clamp(0.0, 1.0) if self.training == False else tensorImage,
-			'tensorDisparity': torch.nn.functional.threshold(input=tensorDisparity, threshold=0.0, value=0.0)
+			'tenExisting': tenExisting,
+			'tenImage': tenImage.clamp(0.0, 1.0) if self.training == False else tenImage,
+			'tenDisparity': torch.nn.functional.threshold(input=tenDisparity, threshold=0.0, value=0.0)
 		}
 	# end
 # end
 
 moduleInpaint = Inpaint().cuda().eval(); moduleInpaint.load_state_dict(torch.load('./models/pointcloud-inpainting.pytorch'))
 
-def pointcloud_inpainting(tensorImage, tensorDisparity, tensorShift):
-	return moduleInpaint(tensorImage, tensorDisparity, tensorShift)
+def pointcloud_inpainting(tenImage, tenDisparity, tenShift):
+	return moduleInpaint(tenImage, tenDisparity, tenShift)
 # end

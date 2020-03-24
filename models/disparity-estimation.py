@@ -28,12 +28,12 @@ class Basic(torch.nn.Module):
 		# end
 	# end
 
-	def forward(self, tensorInput):
+	def forward(self, tenInput):
 		if self.moduleShortcut is None:
-			return self.moduleMain(tensorInput) + tensorInput
+			return self.moduleMain(tenInput) + tenInput
 
 		elif self.moduleShortcut is not None:
-			return self.moduleMain(tensorInput) + self.moduleShortcut(tensorInput)
+			return self.moduleMain(tenInput) + self.moduleShortcut(tenInput)
 
 		# end
 	# end
@@ -51,8 +51,8 @@ class Downsample(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		return self.moduleMain(tensorInput)
+	def forward(self, tenInput):
+		return self.moduleMain(tenInput)
 	# end
 # end
 
@@ -69,8 +69,8 @@ class Upsample(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		return self.moduleMain(tensorInput)
+	def forward(self, tenInput):
+		return self.moduleMain(tenInput)
 	# end
 # end
 
@@ -100,14 +100,14 @@ class Semantics(torch.nn.Module):
 		)
 	# end
 
-	def forward(self, tensorInput):
-		tensorPreprocessed = tensorInput[:, [ 2, 1, 0 ], :, :]
+	def forward(self, tenInput):
+		tenPreprocessed = tenInput[:, [ 2, 1, 0 ], :, :]
 
-		tensorPreprocessed[:, 0, :, :] = (tensorPreprocessed[:, 0, :, :] - 0.485) / 0.229
-		tensorPreprocessed[:, 1, :, :] = (tensorPreprocessed[:, 1, :, :] - 0.456) / 0.224
-		tensorPreprocessed[:, 2, :, :] = (tensorPreprocessed[:, 2, :, :] - 0.406) / 0.225
+		tenPreprocessed[:, 0, :, :] = (tenPreprocessed[:, 0, :, :] - 0.485) / 0.229
+		tenPreprocessed[:, 1, :, :] = (tenPreprocessed[:, 1, :, :] - 0.456) / 0.224
+		tenPreprocessed[:, 2, :, :] = (tenPreprocessed[:, 2, :, :] - 0.406) / 0.225
 
-		return self.moduleVgg(tensorPreprocessed)
+		return self.moduleVgg(tenPreprocessed)
 	# end
 # end
 
@@ -143,67 +143,67 @@ class Disparity(torch.nn.Module):
 		self.moduleDisparity = Basic('conv-relu-conv', [ 32, 32, 1 ])
 	# end
 
-	def forward(self, tensorImage, tensorSemantics):
-		tensorColumn = [ None, None, None, None, None, None ]
+	def forward(self, tenImage, tenSemantics):
+		tenColumn = [ None, None, None, None, None, None ]
 
-		tensorColumn[0] = self.moduleImage(tensorImage)
-		tensorColumn[1] = self._modules['0x0 - 1x0'](tensorColumn[0])
-		tensorColumn[2] = self._modules['1x0 - 2x0'](tensorColumn[1])
-		tensorColumn[3] = self._modules['2x0 - 3x0'](tensorColumn[2]) + self.moduleSemantics(tensorSemantics)
-		tensorColumn[4] = self._modules['3x0 - 4x0'](tensorColumn[3])
-		tensorColumn[5] = self._modules['4x0 - 5x0'](tensorColumn[4])
+		tenColumn[0] = self.moduleImage(tenImage)
+		tenColumn[1] = self._modules['0x0 - 1x0'](tenColumn[0])
+		tenColumn[2] = self._modules['1x0 - 2x0'](tenColumn[1])
+		tenColumn[3] = self._modules['2x0 - 3x0'](tenColumn[2]) + self.moduleSemantics(tenSemantics)
+		tenColumn[4] = self._modules['3x0 - 4x0'](tenColumn[3])
+		tenColumn[5] = self._modules['4x0 - 5x0'](tenColumn[4])
 
 		intColumn = 1
-		for intRow in range(len(tensorColumn)):
-			tensorColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow])
+		for intRow in range(len(tenColumn)):
+			tenColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow])
 			if intRow != 0:
-				tensorColumn[intRow] += self._modules[str(intRow - 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow - 1])
+				tenColumn[intRow] += self._modules[str(intRow - 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow - 1])
 			# end
 		# end
 
 		intColumn = 2
-		for intRow in range(len(tensorColumn) -1, -1, -1):
-			tensorColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow])
-			if intRow != len(tensorColumn) - 1:
-				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
+		for intRow in range(len(tenColumn) -1, -1, -1):
+			tenColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow])
+			if intRow != len(tenColumn) - 1:
+				tenUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow + 1])
 
-				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tenUp.shape[2] != tenColumn[intRow].shape[2]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tenUp.shape[3] != tenColumn[intRow].shape[3]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
-				tensorColumn[intRow] += tensorUp
+				tenColumn[intRow] += tenUp
 			# end
 		# end
 
 		intColumn = 3
-		for intRow in range(len(tensorColumn) -1, -1, -1):
-			tensorColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow])
-			if intRow != len(tensorColumn) - 1:
-				tensorUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tensorColumn[intRow + 1])
+		for intRow in range(len(tenColumn) -1, -1, -1):
+			tenColumn[intRow] = self._modules[str(intRow) + 'x' + str(intColumn - 1) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow])
+			if intRow != len(tenColumn) - 1:
+				tenUp = self._modules[str(intRow + 1) + 'x' + str(intColumn) + ' - ' + str(intRow) + 'x' + str(intColumn)](tenColumn[intRow + 1])
 
-				if tensorUp.shape[2] != tensorColumn[intRow].shape[2]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
-				if tensorUp.shape[3] != tensorColumn[intRow].shape[3]: tensorUp = torch.nn.functional.pad(input=tensorUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
+				if tenUp.shape[2] != tenColumn[intRow].shape[2]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, 0, 0, -1 ], mode='constant', value=0.0)
+				if tenUp.shape[3] != tenColumn[intRow].shape[3]: tenUp = torch.nn.functional.pad(input=tenUp, pad=[ 0, -1, 0, 0 ], mode='constant', value=0.0)
 
-				tensorColumn[intRow] += tensorUp
+				tenColumn[intRow] += tenUp
 			# end
 		# end
 
-		return torch.nn.functional.threshold(input=self.moduleDisparity(tensorColumn[0]), threshold=0.0, value=0.0)
+		return torch.nn.functional.threshold(input=self.moduleDisparity(tenColumn[0]), threshold=0.0, value=0.0)
 	# end
 # end
 
 moduleSemantics = Semantics().cuda().eval()
 moduleDisparity = Disparity().cuda().eval(); moduleDisparity.load_state_dict(torch.load('./models/disparity-estimation.pytorch'))
 
-def disparity_estimation(tensorImage):
-	intWidth = tensorImage.shape[3]
-	intHeight = tensorImage.shape[2]
+def disparity_estimation(tenImage):
+	intWidth = tenImage.shape[3]
+	intHeight = tenImage.shape[2]
 
-	dblRatio = float(intWidth) / float(intHeight)
+	fltRatio = float(intWidth) / float(intHeight)
 
-	intWidth = min(int(512 * dblRatio), 512)
-	intHeight = min(int(512 / dblRatio), 512)
+	intWidth = min(int(512 * fltRatio), 512)
+	intHeight = min(int(512 / fltRatio), 512)
 
-	tensorImage = torch.nn.functional.interpolate(input=tensorImage, size=(intHeight, intWidth), mode='bilinear', align_corners=False)
+	tenImage = torch.nn.functional.interpolate(input=tenImage, size=(intHeight, intWidth), mode='bilinear', align_corners=False)
 
-	return moduleDisparity(tensorImage, moduleSemantics(tensorImage))
+	return moduleDisparity(tenImage, moduleSemantics(tenImage))
 # end
