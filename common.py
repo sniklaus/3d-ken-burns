@@ -201,19 +201,9 @@ def process_kenburns(objSettings):
 ##########################################################
 
 def preprocess_kernel(strKernel, objVariables):
-	strKernel = '''
-		#include "common.h"
-
-		__device__ __forceinline__ float atomicMin(const float* buffer, float fltValue) {
-			int intValue = __float_as_int(*buffer);
-
-			while (__int_as_float(intValue) > fltValue) {
-				intValue = atomicCAS((int*) (buffer), intValue, __float_as_int(fltValue));
-			}
-
-			return __int_as_float(intValue);
-		}
-	''' + strKernel
+	with open('./common.cuda', 'r') as objFile:
+		strKernel = objFile.read() + strKernel
+	# end
 
 	for strVariable in objVariables:
 		objValue = objVariables[strVariable]
@@ -303,11 +293,7 @@ def launch_kernel(strFunction, strKernel):
 		os.environ['CUDA_HOME'] = sorted(glob.glob('/usr/local/cuda-*'))[-1]
 	# end
 
-	if os.path.exists('./common.h') == False:
-		urllib.request.urlretrieve('https://raw.githubusercontent.com/soumith/cuda-convnet2.torch/master/cuda_helpers/helper_math.h', './common.h')
-	# end
-
-	return cupy.cuda.compile_with_cache(strKernel, tuple([ '-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include', '-I ' + os.path.dirname(os.path.abspath(__file__)) ])).get_function(strFunction)
+	return cupy.cuda.compile_with_cache(strKernel, tuple([ '-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include' ])).get_function(strFunction)
 # end
 
 def depth_to_points(tenDepth, fltFocal):
