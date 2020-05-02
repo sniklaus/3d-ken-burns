@@ -4,7 +4,7 @@ def process_load(npyImage, objSettings):
 	objCommon['intWidth'] = npyImage.shape[1]
 	objCommon['intHeight'] = npyImage.shape[0]
 
-	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1))).unsqueeze(0).cuda() / 255.0
+	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1)[None, :, :, :].astype(numpy.float32) * (1.0 / 255.0))).cuda()
 	tenDisparity = disparity_estimation(tenImage)
 	tenDisparity = disparity_adjustment(tenImage, tenDisparity)
 	tenDisparity = disparity_refinement(tenImage, tenDisparity)
