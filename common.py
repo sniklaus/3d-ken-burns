@@ -4,7 +4,7 @@ def process_load(npyImage, objSettings):
 	objCommon['intWidth'] = npyImage.shape[1]
 	objCommon['intHeight'] = npyImage.shape[0]
 
-	tenImage = torch.FloatTensor(npyImage.transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
+	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1))).unsqueeze(0).cuda() / 255.0
 	tenDisparity = disparity_estimation(tenImage)
 	tenDisparity = disparity_adjustment(tenImage, tenDisparity)
 	tenDisparity = disparity_refinement(tenImage, tenDisparity)
@@ -290,7 +290,7 @@ def preprocess_kernel(strKernel, objVariables):
 @cupy.util.memoize(for_each_device=True)
 def launch_kernel(strFunction, strKernel):
 	if 'CUDA_HOME' not in os.environ:
-		os.environ['CUDA_HOME'] = sorted(glob.glob('/usr/local/cuda-*'))[-1]
+		os.environ['CUDA_HOME'] = sorted(glob.glob('/usr/lib/cuda*') + glob.glob('/usr/local/cuda*'))[-1]
 	# end
 
 	return cupy.cuda.compile_with_cache(strKernel, tuple([ '-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include' ])).get_function(strFunction)

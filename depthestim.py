@@ -66,7 +66,7 @@ if __name__ == '__main__':
 	fltFocal = max(npyImage.shape[0], npyImage.shape[1]) / 2.0
 	fltBaseline = 40.0
 
-	tenImage = torch.FloatTensor(npyImage.transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
+	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1))).unsqueeze(0).cuda() / 255.0
 	tenDisparity = disparity_estimation(tenImage)
 	tenDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tenImage, size=(tenDisparity.shape[2] * 4, tenDisparity.shape[3] * 4), mode='bilinear', align_corners=False), tenDisparity)
 	tenDisparity = torch.nn.functional.interpolate(input=tenDisparity, size=(tenImage.shape[2], tenImage.shape[3]), mode='bilinear', align_corners=False) * (max(tenImage.shape[2], tenImage.shape[3]) / 256.0)

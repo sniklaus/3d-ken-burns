@@ -102,7 +102,7 @@ for intMat, strMat in enumerate([ strFile for strFile in objZip.namelist() if st
 
 	objMat = scipy.io.loadmat(io.BytesIO(objZip.read(strMat)))['data']
 
-	tenImage = torch.FloatTensor(numpy.ascontiguousarray(objMat['rgb'][0][0][:, :, ::-1]).transpose(2, 0, 1)).unsqueeze(0).cuda() / 255.0
+	tenImage = torch.FloatTensor(numpy.ascontiguousarray(objMat['rgb'][0][0][:, :, ::-1].transpose(2, 0, 1))).unsqueeze(0).cuda() / 255.0
 	tenDisparity = disparity_estimation(tenImage)
 	tenDisparity = disparity_refinement(torch.nn.functional.interpolate(input=tenImage, size=(tenDisparity.shape[2] * 4, tenDisparity.shape[3] * 4), mode='bilinear', align_corners=False), tenDisparity)
 	tenDisparity = torch.nn.functional.interpolate(input=tenDisparity, size=(tenImage.shape[2], tenImage.shape[3]), mode='bilinear', align_corners=False) * (max(tenImage.shape[2], tenImage.shape[3]) / 256.0)
