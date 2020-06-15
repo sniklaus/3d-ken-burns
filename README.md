@@ -107,5 +107,8 @@ This is a project by Adobe Research. It is licensed under the [Creative Commons 
      }
 ```
 
+## Project Features:
+[<img src="https://s3.amazonaws.com/ir_public/media/ai-fyi_badge_2x.png" alt="AI-FYI.com Pick" height="75">](https://www.youtube.com/watch?v=jUOQrqX4uaM)
+
 ## acknowledgment
 The video above uses materials under a Creative Common license or with the owner's permission, as detailed at the end.
