@@ -86,7 +86,7 @@ This dataset is licensed under the [Creative Commons Attribution-NonCommercial-S
 | western | flying | [0.8 GB](http://content.sniklaus.com/kenburns/western-flying.zip) | [0.2 GB](http://content.sniklaus.com/kenburns/western-flying-depth.zip) | [0.9 GB](http://content.sniklaus.com/kenburns/western-flying-normal.zip) |
 | western | walking | [0.7 GB](http://content.sniklaus.com/kenburns/western-walking.zip) | [0.2 GB](http://content.sniklaus.com/kenburns/western-walking-depth.zip) | [0.8 GB](http://content.sniklaus.com/kenburns/western-walking-normal.zip) |
 
-Please note that this is an updated version of the dataset that we have used in our paper. So while it has fewer scenes in total, each sample capture now has a varying focal length which should help with generalizability. Furthermore, some examples are either over- or under-exposed and it would be a good idea to remove these outliers.
+Please note that this is an updated version of the dataset that we have used in our paper. So while it has fewer scenes in total, each sample capture now has a varying focal length which should help with generalizability. Furthermore, some examples are either over- or under-exposed and it would be a good idea to remove these outliers. Please see [#37](https://github.com/sniklaus/3d-ken-burns/issues/37), [#39](https://github.com/sniklaus/3d-ken-burns/issues/39), and [#40](https://github.com/sniklaus/3d-ken-burns/issues/40) for supplementary discussions.
 
 ## video
 <a href="http://content.sniklaus.com/kenburns/video.mp4" rel="Video"><img src="http://content.sniklaus.com/kenburns/video.jpg" alt="Video" width="100%"></a>
