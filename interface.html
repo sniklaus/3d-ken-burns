@@ -45,7 +45,7 @@
 						<td>
 							<div style="padding:40px 40px 40px 20px;">
 								<div style="background-color:#1D1D1D; border:1px solid #2A2A2A; display:inline-block;">
-									<img src="/get_live" />
+									<img id="previewImage" src="/get_live" />
 								</div>
 							</div>
 						</td>
@@ -55,6 +55,14 @@
 		</div>
 
 		<div style="bottom:16px; position:fixed; right:16px;">
+			<div class="btn-group btn-group-toggle" data-toggle="buttons">
+				<label class="btn btn-primary active">
+				  <input type="radio" name="options" id="preview_stream" autocomplete="off" checked> <i class="fa fa-film"></i>
+				</label>
+				<label class="btn btn-primary">
+				  <input type="radio" name="options" id="preview_still" autocomplete="off"> <i class="fa fa-image"></i>
+				</label>
+			  </div>
 			<button class="btn btn-primary" id="autozoom" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-magic"></i></button>
 			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa fa-folder-open"></i><input id="file" type="file" style="cursor:pointer; bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
 			<a class="btn btn-primary" id="save" href="/get_result" target="_blank" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-save"></i></a>
@@ -68,6 +76,30 @@
 		<script type="text/javascript">
 			// Debounce time for the change commands for from/to image border
 			debounceTime = 250;
+
+			// Function to get the preview image and display it
+			async function updatePreviewImage() {
+				$.ajax({
+					type: "GET",
+					url: "/get_live_still",
+					xhrFields: {
+						responseType: 'blob' 
+					},
+					success: function(data, jqXHR, response) {
+						toBase64(data).then((value) => {
+							jQuery("#previewImage").attr('src', value);
+						});
+					}
+				});
+			}
+
+			// Function to convert the file blob to base64
+			const toBase64 = file => new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = error => reject(error);
+			});
 
 			jQuery(window.document)
 				.on('keydown', function(objEvent) {
@@ -104,6 +136,16 @@
 					}
 				})
 			;
+
+			jQuery('#preview_stream')
+				.on('click', function() {
+					jQuery("#previewImage").attr('src', '/get_live');
+				});
+
+			jQuery('#preview_still')
+				.on('click', function() {
+					jQuery("#previewImage").attr('src', '/get_live_still');
+				});
 
 			jQuery('#autozoom')
 				.on('click', function() {
@@ -224,6 +266,8 @@
 									'fltCenterV': objTo.getData().y + (0.5 * objTo.getData().height),
 									'intCropWidth': Math.round(objTo.getData().width),
 									'intCropHeight': Math.round(objTo.getData().height)
+								}, function(data) {
+									updatePreviewImage();
 								});
 							})
 						});
@@ -231,7 +275,9 @@
 						jQuery.post('/load_image', {
 							'strFile': objEvent.target.files[0].name,
 							'strData': objImage.toDataURL()
-						})
+						}, function(data) {
+							updatePreviewImage();
+						});
 					}, {
 						'canvas': true,
 						'minWidth': 1024,

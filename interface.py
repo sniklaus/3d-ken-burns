@@ -155,6 +155,34 @@ def update_to():
 	return ''
 # end
 
+@objFlask.route(rule='/get_live_still', methods=[ 'GET' ])
+def get_live_still():
+	if objPlayback['intTime'] > len(objPlayback['fltTime']) - 1:
+		objPlayback['intTime'] = 0
+	# end
+
+	if objPlayback['strImage'] is None:
+		imgBytes = cv2.imencode(ext='.jpg', img=numpy.ones([ 768, 1024, 3 ], numpy.uint8) * 29, params=[ cv2.IMWRITE_JPEG_QUALITY, 80 ])[1].tobytes()
+	else:
+		intTime = objPlayback['intTime']
+		fltTime = objPlayback['fltTime'][intTime]
+
+		if objPlayback['strMode'] == 'automatic':
+			objPlayback['intTime'] += 1
+
+		npyKenburns = process_kenburns({
+			'fltSteps': [ fltTime ],
+			'objFrom': objPlayback['objFrom'],
+			'objTo': objPlayback['objTo'],
+			'boolInpaint': False
+		})[0]
+
+		imgBytes = cv2.imencode(ext='.jpg', img=npyKenburns, params=[ cv2.IMWRITE_JPEG_QUALITY, 60 ])[1].tobytes()
+	# end
+
+	objKenburns = io.BytesIO(imgBytes)
+	return flask.send_file(filename_or_fp=objKenburns, mimetype='image/jpeg', as_attachment=True, attachment_filename='kenburns.jpeg', cache_timeout=-1)
+
 @objFlask.route(rule='/get_live', methods=[ 'GET' ])
 def get_live():
 	def generator():
