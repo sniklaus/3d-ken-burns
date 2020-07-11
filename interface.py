@@ -3,6 +3,7 @@
 import torch
 import torchvision
 
+import argparse
 import base64
 import cupy
 import cv2
@@ -38,6 +39,15 @@ torch.set_grad_enabled(False) # make sure to not compute gradients for computati
 torch.backends.cudnn.enabled = True # make sure to use cudnn for computational performance
 
 ##########################################################
+
+# Parse arguments
+def getOptions(args=sys.argv[1:]):
+    parser = argparse.ArgumentParser(description="Parses command.")
+    parser.add_argument("-p", "--port", type=int, default=8080, help="The port to use")
+    options = parser.parse_args(args)
+    return options
+
+options = getOptions()
 
 objCommon = {}
 
@@ -210,4 +220,6 @@ def get_result():
 	return flask.send_file(filename_or_fp=objKenburns, mimetype='video/mp4', as_attachment=True, attachment_filename='kenburns.mp4', cache_timeout=-1)
 # end
 
-gevent.pywsgi.WSGIServer(listener=('0.0.0.0', 8080), application=objFlask).serve_forever()
+
+print('Starting server on port ' + str(options.port))
+gevent.pywsgi.WSGIServer(listener=('0.0.0.0', options.port), application=objFlask).serve_forever()
