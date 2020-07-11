@@ -16,6 +16,9 @@
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
 
 		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" />
+
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-throttle-debounce/1.1/jquery.ba-throttle-debounce.min.js"></script>
+		
 	</head>
 	<body style="background-color:#232323;">
 		<div style="left:50%; position:absolute; top:50%; transform:translate(-50%, -50%);">
@@ -63,6 +66,9 @@
 		</script>
 
 		<script type="text/javascript">
+			// Debounce time for the change commands for from/to image border
+			debounceTime = 250;
+
 			jQuery(window.document)
 				.on('keydown', function(objEvent) {
 					if (objEvent.keyCode === 49) {
@@ -177,7 +183,7 @@
 
 								objFrom.options.crop();
 							},
-							'crop': function() {
+							'crop': $.debounce(debounceTime, function() {
 								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
@@ -187,7 +193,7 @@
 									'intCropWidth': Math.round(objFrom.getData().width),
 									'intCropHeight': Math.round(objFrom.getData().height)
 								});
-							}
+							})
 						});
 
 						objTo = new Cropper(jQuery('#to').get(0), {
@@ -209,7 +215,7 @@
 
 								objTo.options.crop();
 							},
-							'crop': function() {
+							'crop': $.debounce(debounceTime, function() {
 								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
@@ -219,7 +225,7 @@
 									'intCropWidth': Math.round(objTo.getData().width),
 									'intCropHeight': Math.round(objTo.getData().height)
 								});
-							}
+							})
 						});
 
 						jQuery.post('/load_image', {
