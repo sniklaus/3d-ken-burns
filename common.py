@@ -297,11 +297,11 @@ def launch_kernel(strFunction, strKernel):
 # end
 
 def depth_to_points(tenDepth, fltFocal):
-	tenHorizontal = torch.linspace((-0.5 * tenDepth.shape[3]) + 0.5, (0.5 * tenDepth.shape[3]) - 0.5, tenDepth.shape[3]).view(1, 1, 1, tenDepth.shape[3]).expand(tenDepth.shape[0], -1, tenDepth.shape[2], -1)
+	tenHorizontal = torch.linspace((-0.5 * tenDepth.shape[3]) + 0.5, (0.5 * tenDepth.shape[3]) - 0.5, tenDepth.shape[3]).view(1, 1, 1, -1).expand(tenDepth.shape[0], -1, tenDepth.shape[2], -1)
 	tenHorizontal = tenHorizontal * (1.0 / fltFocal)
 	tenHorizontal = tenHorizontal.type_as(tenDepth)
 
-	tenVertical = torch.linspace((-0.5 * tenDepth.shape[2]) + 0.5, (0.5 * tenDepth.shape[2]) - 0.5, tenDepth.shape[2]).view(1, 1, tenDepth.shape[2], 1).expand(tenDepth.shape[0], -1, -1, tenDepth.shape[3])
+	tenVertical = torch.linspace((-0.5 * tenDepth.shape[2]) + 0.5, (0.5 * tenDepth.shape[2]) - 0.5, tenDepth.shape[2]).view(1, 1, -1, 1).expand(tenDepth.shape[0], -1, -1, tenDepth.shape[3])
 	tenVertical = tenVertical * (1.0 / fltFocal)
 	tenVertical = tenVertical.type_as(tenDepth)
 
