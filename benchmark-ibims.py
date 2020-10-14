@@ -26,7 +26,6 @@ import shutil
 import sys
 import tempfile
 import time
-import urllib
 import zipfile
 
 ##########################################################
@@ -74,9 +73,7 @@ pe_ori = []
 
 ##########################################################
 
-if os.path.isfile('./benchmark-ibims-scripts.zip') == False:
-	urllib.request.urlretrieve('ftp://m1455541:m1455541@dataserv.ub.tum.de/evaluation_scripts.zip', './benchmark-ibims-scripts.zip')
-# end
+torch.hub.download_url_to_file('ftp://m1455541:m1455541@dataserv.ub.tum.de/evaluation_scripts.zip', './benchmark-ibims-scripts.zip')
 
 objZip = zipfile.ZipFile('./benchmark-ibims-scripts.zip', 'r')
 
@@ -91,9 +88,7 @@ objZip.close()
 
 ##########################################################
 
-if os.path.isfile('./benchmark-ibims-data.zip') == False:
-	urllib.request.urlretrieve('ftp://m1455541:m1455541@dataserv.ub.tum.de/ibims1_core_mat.zip', './benchmark-ibims-data.zip')
-# end
+torch.hub.download_url_to_file('ftp://m1455541:m1455541@dataserv.ub.tum.de/ibims1_core_mat.zip', './benchmark-ibims-data.zip')
 
 objZip = zipfile.ZipFile('./benchmark-ibims-data.zip', 'r')
 
