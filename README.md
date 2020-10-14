@@ -4,8 +4,6 @@ This is a reference implementation of 3D Ken Burns Effect from a Single Image [1
 <a href="https://arxiv.org/abs/1909.05483" rel="Paper"><img src="http://content.sniklaus.com/kenburns/paper.jpg" alt="Paper" width="100%"></a>
 
 ## setup
-To download the pre-trained models, run `bash download.bash`.
-
 Several functions are implemented in CUDA using CuPy, which is why CuPy is a required dependency. It can be installed using `pip install cupy` or alternatively using one of the provided binary packages as outlined in the CuPy repository. Please also make sure to have the `CUDA_HOME` environment variable configured.
 
 In order to generate the video results, please also make sure to have `pip install moviepy` installed.

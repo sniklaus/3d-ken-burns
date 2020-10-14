@@ -3,7 +3,7 @@ class Basic(torch.nn.Module):
 		super(Basic, self).__init__()
 
 		if strType == 'relu-conv-relu-conv':
-			self.moduleMain = torch.nn.Sequential(
+			self.netMain = torch.nn.Sequential(
 				torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
 				torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=1, padding=1),
 				torch.nn.PReLU(num_parameters=intChannels[1], init=0.25),
@@ -11,7 +11,7 @@ class Basic(torch.nn.Module):
 			)
 
 		elif strType == 'conv-relu-conv':
-			self.moduleMain = torch.nn.Sequential(
+			self.netMain = torch.nn.Sequential(
 				torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=1, padding=1),
 				torch.nn.PReLU(num_parameters=intChannels[1], init=0.25),
 				torch.nn.Conv2d(in_channels=intChannels[1], out_channels=intChannels[2], kernel_size=3, stride=1, padding=1)
@@ -20,20 +20,20 @@ class Basic(torch.nn.Module):
 		# end
 
 		if intChannels[0] == intChannels[2]:
-			self.moduleShortcut = None
+			self.netShortcut = None
 
 		elif intChannels[0] != intChannels[2]:
-			self.moduleShortcut = torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[2], kernel_size=1, stride=1, padding=0)
+			self.netShortcut = torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[2], kernel_size=1, stride=1, padding=0)
 
 		# end
 	# end
 
 	def forward(self, tenInput):
-		if self.moduleShortcut is None:
-			return self.moduleMain(tenInput) + tenInput
+		if self.netShortcut is None:
+			return self.netMain(tenInput) + tenInput
 
-		elif self.moduleShortcut is not None:
-			return self.moduleMain(tenInput) + self.moduleShortcut(tenInput)
+		elif self.netShortcut is not None:
+			return self.netMain(tenInput) + self.netShortcut(tenInput)
 
 		# end
 	# end
@@ -43,7 +43,7 @@ class Downsample(torch.nn.Module):
 	def __init__(self, intChannels):
 		super(Downsample, self).__init__()
 
-		self.moduleMain = torch.nn.Sequential(
+		self.netMain = torch.nn.Sequential(
 			torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
 			torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=2, padding=1),
 			torch.nn.PReLU(num_parameters=intChannels[1], init=0.25),
@@ -52,7 +52,7 @@ class Downsample(torch.nn.Module):
 	# end
 
 	def forward(self, tenInput):
-		return self.moduleMain(tenInput)
+		return self.netMain(tenInput)
 	# end
 # end
 
@@ -60,7 +60,7 @@ class Upsample(torch.nn.Module):
 	def __init__(self, intChannels):
 		super(Upsample, self).__init__()
 
-		self.moduleMain = torch.nn.Sequential(
+		self.netMain = torch.nn.Sequential(
 			torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
 			torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
 			torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=1, padding=1),
@@ -70,7 +70,7 @@ class Upsample(torch.nn.Module):
 	# end
 
 	def forward(self, tenInput):
-		return self.moduleMain(tenInput)
+		return self.netMain(tenInput)
 	# end
 # end
 
@@ -78,14 +78,14 @@ class Inpaint(torch.nn.Module):
 	def __init__(self):
 		super(Inpaint, self).__init__()
 
-		self.moduleContext = torch.nn.Sequential(
+		self.netContext = torch.nn.Sequential(
 			torch.nn.Conv2d(in_channels=4, out_channels=64, kernel_size=3, stride=1, padding=1, bias=True),
 			torch.nn.PReLU(num_parameters=64, init=0.25),
 			torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=True),
 			torch.nn.PReLU(num_parameters=64, init=0.25)
 		)
 
-		self.moduleInput = Basic('conv-relu-conv', [ 3 + 1 + 64 + 1, 32, 32 ])
+		self.netInput = Basic('conv-relu-conv', [ 3 + 1 + 64 + 1, 32, 32 ])
 
 		for intRow, intFeatures in [ (0, 32), (1, 64), (2, 128), (3, 256) ]:
 			self.add_module(str(intRow) + 'x0' + ' - ' + str(intRow) + 'x1', Basic('relu-conv-relu-conv', [ intFeatures, intFeatures, intFeatures ]))
@@ -105,8 +105,8 @@ class Inpaint(torch.nn.Module):
 			self.add_module('1x' + str(intCol) + ' - ' + '0x' + str(intCol), Upsample([ 64, 32, 32 ]))
 		# end
 
-		self.moduleImage = Basic('conv-relu-conv', [ 32, 32, 3 ])
-		self.moduleDisparity = Basic('conv-relu-conv', [ 32, 32, 1 ])
+		self.netImage = Basic('conv-relu-conv', [ 32, 32, 3 ])
+		self.netDisparity = Basic('conv-relu-conv', [ 32, 32, 1 ])
 	# end
 
 	def forward(self, tenImage, tenDisparity, tenShift):
@@ -126,7 +126,7 @@ class Inpaint(torch.nn.Module):
 		tenDisparity -= tenMean[1]
 		tenDisparity /= tenStd[1] + 0.0000001
 
-		tenContext = self.moduleContext(torch.cat([ tenImage, tenDisparity ], 1))
+		tenContext = self.netContext(torch.cat([ tenImage, tenDisparity ], 1))
 
 		tenRender, tenExisting = render_pointcloud(tenPoints + tenShift, torch.cat([ tenImage, tenDisparity, tenContext ], 1).view(1, 68, -1), objCommon['intWidth'], objCommon['intHeight'], objCommon['fltFocal'], objCommon['fltBaseline'])
 
@@ -136,7 +136,7 @@ class Inpaint(torch.nn.Module):
 
 		tenColumn = [ None, None, None, None ]
 
-		tenColumn[0] = self.moduleInput(torch.cat([ tenRender, tenExisting ], 1))
+		tenColumn[0] = self.netInput(torch.cat([ tenRender, tenExisting ], 1))
 		tenColumn[1] = self._modules['0x0 - 1x0'](tenColumn[0])
 		tenColumn[2] = self._modules['1x0 - 2x0'](tenColumn[1])
 		tenColumn[3] = self._modules['2x0 - 3x0'](tenColumn[2])
@@ -175,11 +175,11 @@ class Inpaint(torch.nn.Module):
 			# end
 		# end
 
-		tenImage = self.moduleImage(tenColumn[0])
+		tenImage = self.netImage(tenColumn[0])
 		tenImage *= tenStd[0] + 0.0000001
 		tenImage += tenMean[0]
 
-		tenDisparity = self.moduleDisparity(tenColumn[0])
+		tenDisparity = self.netDisparity(tenColumn[0])
 		tenDisparity *= tenStd[1] + 0.0000001
 		tenDisparity += tenMean[1]
 
@@ -191,8 +191,9 @@ class Inpaint(torch.nn.Module):
 	# end
 # end
 
-moduleInpaint = Inpaint().cuda().eval(); moduleInpaint.load_state_dict(torch.load('./models/pointcloud-inpainting.pytorch'))
+netInpaint = Inpaint().cuda().eval()
+netInpaint.load_state_dict({ strKey.replace('module', 'net'): tenWeight for strKey, tenWeight in torch.hub.load_state_dict_from_url(url='http://content.sniklaus.com/kenburns/network-inpainting.pytorch', file_name='kenburns-inpainting').items() })
 
 def pointcloud_inpainting(tenImage, tenDisparity, tenShift):
-	return moduleInpaint(tenImage, tenDisparity, tenShift)
+	return netInpaint(tenImage, tenDisparity, tenShift)
 # end

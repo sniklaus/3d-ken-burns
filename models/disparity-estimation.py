@@ -3,7 +3,7 @@ class Basic(torch.nn.Module):
 		super(Basic, self).__init__()
 
 		if strType == 'relu-conv-relu-conv':
-			self.moduleMain = torch.nn.Sequential(
+			self.netMain = torch.nn.Sequential(
 				torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
 				torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=1, padding=1),
 				torch.nn.PReLU(num_parameters=intChannels[1], init=0.25),
@@ -11,7 +11,7 @@ class Basic(torch.nn.Module):
 			)
 
 		elif strType == 'conv-relu-conv':
-			self.moduleMain = torch.nn.Sequential(
+			self.netMain = torch.nn.Sequential(
 				torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=1, padding=1),
 				torch.nn.PReLU(num_parameters=intChannels[1], init=0.25),
 				torch.nn.Conv2d(in_channels=intChannels[1], out_channels=intChannels[2], kernel_size=3, stride=1, padding=1)
@@ -20,20 +20,20 @@ class Basic(torch.nn.Module):
 		# end
 
 		if intChannels[0] == intChannels[2]:
-			self.moduleShortcut = None
+			self.netShortcut = None
 
 		elif intChannels[0] != intChannels[2]:
-			self.moduleShortcut = torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[2], kernel_size=1, stride=1, padding=0)
+			self.netShortcut = torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[2], kernel_size=1, stride=1, padding=0)
 
 		# end
 	# end
 
 	def forward(self, tenInput):
-		if self.moduleShortcut is None:
-			return self.moduleMain(tenInput) + tenInput
+		if self.netShortcut is None:
+			return self.netMain(tenInput) + tenInput
 
-		elif self.moduleShortcut is not None:
-			return self.moduleMain(tenInput) + self.moduleShortcut(tenInput)
+		elif self.netShortcut is not None:
+			return self.netMain(tenInput) + self.netShortcut(tenInput)
 
 		# end
 	# end
@@ -43,7 +43,7 @@ class Downsample(torch.nn.Module):
 	def __init__(self, intChannels):
 		super(Downsample, self).__init__()
 
-		self.moduleMain = torch.nn.Sequential(
+		self.netMain = torch.nn.Sequential(
 			torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
 			torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=2, padding=1),
 			torch.nn.PReLU(num_parameters=intChannels[1], init=0.25),
@@ -52,7 +52,7 @@ class Downsample(torch.nn.Module):
 	# end
 
 	def forward(self, tenInput):
-		return self.moduleMain(tenInput)
+		return self.netMain(tenInput)
 	# end
 # end
 
@@ -60,7 +60,7 @@ class Upsample(torch.nn.Module):
 	def __init__(self, intChannels):
 		super(Upsample, self).__init__()
 
-		self.moduleMain = torch.nn.Sequential(
+		self.netMain = torch.nn.Sequential(
 			torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
 			torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
 			torch.nn.Conv2d(in_channels=intChannels[0], out_channels=intChannels[1], kernel_size=3, stride=1, padding=1),
@@ -70,7 +70,7 @@ class Upsample(torch.nn.Module):
 	# end
 
 	def forward(self, tenInput):
-		return self.moduleMain(tenInput)
+		return self.netMain(tenInput)
 	# end
 # end
 
@@ -78,24 +78,24 @@ class Semantics(torch.nn.Module):
 	def __init__(self):
 		super(Semantics, self).__init__()
 
-		moduleVgg = torchvision.models.vgg19_bn(pretrained=True).features.eval()
+		netVgg = torchvision.models.vgg19_bn(pretrained=True).features.eval()
 
-		self.moduleVgg = torch.nn.Sequential(
-			moduleVgg[0:3],
-			moduleVgg[3:6],
+		self.netVgg = torch.nn.Sequential(
+			netVgg[0:3],
+			netVgg[3:6],
 			torch.nn.MaxPool2d(kernel_size=2, stride=2, ceil_mode=True),
-			moduleVgg[7:10],
-			moduleVgg[10:13],
+			netVgg[7:10],
+			netVgg[10:13],
 			torch.nn.MaxPool2d(kernel_size=2, stride=2, ceil_mode=True),
-			moduleVgg[14:17],
-			moduleVgg[17:20],
-			moduleVgg[20:23],
-			moduleVgg[23:26],
+			netVgg[14:17],
+			netVgg[17:20],
+			netVgg[20:23],
+			netVgg[23:26],
 			torch.nn.MaxPool2d(kernel_size=2, stride=2, ceil_mode=True),
-			moduleVgg[27:30],
-			moduleVgg[30:33],
-			moduleVgg[33:36],
-			moduleVgg[36:39],
+			netVgg[27:30],
+			netVgg[30:33],
+			netVgg[33:36],
+			netVgg[36:39],
 			torch.nn.MaxPool2d(kernel_size=2, stride=2, ceil_mode=True)
 		)
 	# end
@@ -107,7 +107,7 @@ class Semantics(torch.nn.Module):
 		tenPreprocessed[:, 1, :, :] = (tenPreprocessed[:, 1, :, :] - 0.456) / 0.224
 		tenPreprocessed[:, 2, :, :] = (tenPreprocessed[:, 2, :, :] - 0.406) / 0.225
 
-		return self.moduleVgg(tenPreprocessed)
+		return self.netVgg(tenPreprocessed)
 	# end
 # end
 
@@ -115,8 +115,8 @@ class Disparity(torch.nn.Module):
 	def __init__(self):
 		super(Disparity, self).__init__()
 
-		self.moduleImage = torch.nn.Conv2d(in_channels=3, out_channels=32, kernel_size=7, stride=2, padding=3)
-		self.moduleSemantics = torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1)
+		self.netImage = torch.nn.Conv2d(in_channels=3, out_channels=32, kernel_size=7, stride=2, padding=3)
+		self.netSemantics = torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1)
 
 		for intRow, intFeatures in [ (0, 32), (1, 48), (2, 64), (3, 512), (4, 512), (5, 512) ]:
 			self.add_module(str(intRow) + 'x0' + ' - ' + str(intRow) + 'x1', Basic('relu-conv-relu-conv', [ intFeatures, intFeatures, intFeatures ]))
@@ -140,16 +140,16 @@ class Disparity(torch.nn.Module):
 			self.add_module('1x' + str(intCol) + ' - ' + '0x' + str(intCol), Upsample([ 48, 32, 32 ]))
 		# end
 
-		self.moduleDisparity = Basic('conv-relu-conv', [ 32, 32, 1 ])
+		self.netDisparity = Basic('conv-relu-conv', [ 32, 32, 1 ])
 	# end
 
 	def forward(self, tenImage, tenSemantics):
 		tenColumn = [ None, None, None, None, None, None ]
 
-		tenColumn[0] = self.moduleImage(tenImage)
+		tenColumn[0] = self.netImage(tenImage)
 		tenColumn[1] = self._modules['0x0 - 1x0'](tenColumn[0])
 		tenColumn[2] = self._modules['1x0 - 2x0'](tenColumn[1])
-		tenColumn[3] = self._modules['2x0 - 3x0'](tenColumn[2]) + self.moduleSemantics(tenSemantics)
+		tenColumn[3] = self._modules['2x0 - 3x0'](tenColumn[2]) + self.netSemantics(tenSemantics)
 		tenColumn[4] = self._modules['3x0 - 4x0'](tenColumn[3])
 		tenColumn[5] = self._modules['4x0 - 5x0'](tenColumn[4])
 
@@ -187,12 +187,13 @@ class Disparity(torch.nn.Module):
 			# end
 		# end
 
-		return torch.nn.functional.threshold(input=self.moduleDisparity(tenColumn[0]), threshold=0.0, value=0.0)
+		return torch.nn.functional.threshold(input=self.netDisparity(tenColumn[0]), threshold=0.0, value=0.0)
 	# end
 # end
 
-moduleSemantics = Semantics().cuda().eval()
-moduleDisparity = Disparity().cuda().eval(); moduleDisparity.load_state_dict(torch.load('./models/disparity-estimation.pytorch'))
+netSemantics = Semantics().cuda().eval()
+netDisparity = Disparity().cuda().eval()
+netDisparity.load_state_dict({ strKey.replace('module', 'net'): tenWeight for strKey, tenWeight in torch.hub.load_state_dict_from_url(url='http://content.sniklaus.com/kenburns/network-disparity.pytorch', file_name='kenburns-disparity').items() })
 
 def disparity_estimation(tenImage):
 	intWidth = tenImage.shape[3]
@@ -205,5 +206,5 @@ def disparity_estimation(tenImage):
 
 	tenImage = torch.nn.functional.interpolate(input=tenImage, size=(intHeight, intWidth), mode='bilinear', align_corners=False)
 
-	return moduleDisparity(tenImage, moduleSemantics(tenImage))
+	return netDisparity(tenImage, netSemantics(tenImage))
 # end

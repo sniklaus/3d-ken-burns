@@ -1,4 +1,4 @@
-moduleMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).cuda().eval()
+netMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).cuda().eval()
 
 def disparity_adjustment(tenImage, tenDisparity):
 	assert(tenImage.shape[0] == 1)
@@ -7,7 +7,7 @@ def disparity_adjustment(tenImage, tenDisparity):
 	boolUsed = {}
 	tenMasks = []
 
-	objPredictions = moduleMaskrcnn([ tenImage[ 0, [ 2, 0, 1 ], :, : ] ])[0]
+	objPredictions = netMaskrcnn([ tenImage[ 0, [ 2, 0, 1 ], :, : ] ])[0]
 
 	for intMask in range(objPredictions['masks'].shape[0]):
 		if intMask in boolUsed:
