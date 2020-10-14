@@ -287,7 +287,7 @@ def preprocess_kernel(strKernel, objVariables):
 	return strKernel
 # end
 
-@cupy.util.memoize(for_each_device=True)
+@cupy.memoize(for_each_device=True)
 def launch_kernel(strFunction, strKernel):
 	if 'CUDA_HOME' not in os.environ:
 		os.environ['CUDA_HOME'] = sorted(glob.glob('/usr/lib/cuda*') + glob.glob('/usr/local/cuda*'))[-1]
