@@ -81,7 +81,7 @@ def index():
 @objFlask.route(rule='/load_image', methods=[ 'POST' ])
 def load_image():
 	objPlayback['strImage'] = flask.request.form['strFile']
-	objPlayback['npyImage'] = numpy.ascontiguousarray(cv2.imdecode(buf=numpy.fromstring(base64.b64decode(flask.request.form['strData'].split(';base64,')[1]), numpy.uint8), flags=-1)[:, :, 0:3])
+	objPlayback['npyImage'] = numpy.ascontiguousarray(cv2.imdecode(buf=numpy.frombuffer(base64.b64decode(flask.request.form['strData'].split(';base64,')[1]), numpy.uint8), flags=-1)[:, :, 0:3])
 	objPlayback['strCache'] = {}
 
 	process_load(objPlayback['npyImage'], {})
