@@ -5,5 +5,5 @@ moviepy>=1.0.0
 numpy>=1.15.0
 opencv-contrib-python>=3.4.0
 scipy>=1.1.0
-torch>=1.2.0
-torchvision>=0.4.0
+torch>=1.6.0
+torchvision>=0.7.0
