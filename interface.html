@@ -16,6 +16,9 @@
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
 
 		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" />
+
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-throttle-debounce/1.1/jquery.ba-throttle-debounce.min.js"></script>
+		
 	</head>
 	<body style="background-color:#232323;">
 		<div style="left:50%; position:absolute; top:50%; transform:translate(-50%, -50%);">
@@ -42,7 +45,7 @@
 						<td>
 							<div style="padding:40px 40px 40px 20px;">
 								<div style="background-color:#1D1D1D; border:1px solid #2A2A2A; display:inline-block;">
-									<img src="/get_live" />
+									<img id="previewImage" src="/get_live" />
 								</div>
 							</div>
 						</td>
@@ -52,6 +55,14 @@
 		</div>
 
 		<div style="bottom:16px; position:fixed; right:16px;">
+			<div class="btn-group btn-group-toggle" data-toggle="buttons">
+				<label class="btn btn-primary active">
+				  <input type="radio" name="options" id="preview_stream" autocomplete="off" checked> <i class="fa fa-film"></i>
+				</label>
+				<label class="btn btn-primary">
+				  <input type="radio" name="options" id="preview_still" autocomplete="off"> <i class="fa fa-image"></i>
+				</label>
+			  </div>
 			<button class="btn btn-primary" id="autozoom" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-magic"></i></button>
 			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa fa-folder-open"></i><input id="file" type="file" style="cursor:pointer; bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
 			<a class="btn btn-primary" id="save" href="/get_result" target="_blank" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-save"></i></a>
@@ -63,6 +74,33 @@
 		</script>
 
 		<script type="text/javascript">
+			// Debounce time for the change commands for from/to image border
+			debounceTime = 250;
+
+			// Function to get the preview image and display it
+			async function updatePreviewImage() {
+				$.ajax({
+					type: "GET",
+					url: "/get_live_still",
+					xhrFields: {
+						responseType: 'blob' 
+					},
+					success: function(data, jqXHR, response) {
+						toBase64(data).then((value) => {
+							jQuery("#previewImage").attr('src', value);
+						});
+					}
+				});
+			}
+
+			// Function to convert the file blob to base64
+			const toBase64 = file => new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = error => reject(error);
+			});
+
 			jQuery(window.document)
 				.on('keydown', function(objEvent) {
 					if (objEvent.keyCode === 49) {
@@ -98,6 +136,16 @@
 					}
 				})
 			;
+
+			jQuery('#preview_stream')
+				.on('click', function() {
+					jQuery("#previewImage").attr('src', '/get_live');
+				});
+
+			jQuery('#preview_still')
+				.on('click', function() {
+					jQuery("#previewImage").attr('src', '/get_live_still');
+				});
 
 			jQuery('#autozoom')
 				.on('click', function() {
@@ -177,7 +225,7 @@
 
 								objFrom.options.crop();
 							},
-							'crop': function() {
+							'crop': $.debounce(debounceTime, function() {
 								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
@@ -187,7 +235,7 @@
 									'intCropWidth': Math.round(objFrom.getData().width),
 									'intCropHeight': Math.round(objFrom.getData().height)
 								});
-							}
+							})
 						});
 
 						objTo = new Cropper(jQuery('#to').get(0), {
@@ -209,7 +257,7 @@
 
 								objTo.options.crop();
 							},
-							'crop': function() {
+							'crop': $.debounce(debounceTime, function() {
 								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
@@ -218,14 +266,18 @@
 									'fltCenterV': objTo.getData().y + (0.5 * objTo.getData().height),
 									'intCropWidth': Math.round(objTo.getData().width),
 									'intCropHeight': Math.round(objTo.getData().height)
+								}, function(data) {
+									updatePreviewImage();
 								});
-							}
+							})
 						});
 
 						jQuery.post('/load_image', {
 							'strFile': objEvent.target.files[0].name,
 							'strData': objImage.toDataURL()
-						})
+						}, function(data) {
+							updatePreviewImage();
+						});
 					}, {
 						'canvas': true,
 						'minWidth': 1024,

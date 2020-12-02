@@ -3,6 +3,7 @@
 import torch
 import torchvision
 
+import argparse
 import base64
 import cupy
 import cv2
@@ -38,6 +39,15 @@ torch.set_grad_enabled(False) # make sure to not compute gradients for computati
 torch.backends.cudnn.enabled = True # make sure to use cudnn for computational performance
 
 ##########################################################
+
+# Parse arguments
+def getOptions(args=sys.argv[1:]):
+    parser = argparse.ArgumentParser(description="Parses command.")
+    parser.add_argument("-p", "--port", type=int, default=8080, help="The port to use")
+    options = parser.parse_args(args)
+    return options
+
+options = getOptions()
 
 objCommon = {}
 
@@ -145,6 +155,34 @@ def update_to():
 	return ''
 # end
 
+@objFlask.route(rule='/get_live_still', methods=[ 'GET' ])
+def get_live_still():
+	if objPlayback['intTime'] > len(objPlayback['fltTime']) - 1:
+		objPlayback['intTime'] = 0
+	# end
+
+	if objPlayback['strImage'] is None:
+		imgBytes = cv2.imencode(ext='.jpg', img=numpy.ones([ 768, 1024, 3 ], numpy.uint8) * 29, params=[ cv2.IMWRITE_JPEG_QUALITY, 80 ])[1].tobytes()
+	else:
+		intTime = objPlayback['intTime']
+		fltTime = objPlayback['fltTime'][intTime]
+
+		if objPlayback['strMode'] == 'automatic':
+			objPlayback['intTime'] += 1
+
+		npyKenburns = process_kenburns({
+			'fltSteps': [ fltTime ],
+			'objFrom': objPlayback['objFrom'],
+			'objTo': objPlayback['objTo'],
+			'boolInpaint': False
+		})[0]
+
+		imgBytes = cv2.imencode(ext='.jpg', img=npyKenburns, params=[ cv2.IMWRITE_JPEG_QUALITY, 60 ])[1].tobytes()
+	# end
+
+	objKenburns = io.BytesIO(imgBytes)
+	return flask.send_file(filename_or_fp=objKenburns, mimetype='image/jpeg', as_attachment=True, attachment_filename='kenburns.jpeg', cache_timeout=-1)
+
 @objFlask.route(rule='/get_live', methods=[ 'GET' ])
 def get_live():
 	def generator():
@@ -210,4 +248,6 @@ def get_result():
 	return flask.send_file(filename_or_fp=objKenburns, mimetype='video/mp4', as_attachment=True, attachment_filename='kenburns.mp4', cache_timeout=-1)
 # end
 
-gevent.pywsgi.WSGIServer(listener=('0.0.0.0', 8080), application=objFlask).serve_forever()
+
+print('Starting server on port ' + str(options.port))
+gevent.pywsgi.WSGIServer(listener=('0.0.0.0', options.port), application=objFlask).serve_forever()
