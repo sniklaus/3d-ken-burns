@@ -185,7 +185,7 @@ class Inpaint(torch.nn.Module):
 
 		return {
 			'tenExisting': tenExisting,
-			'tenImage': tenImage.clamp(0.0, 1.0) if self.training == False else tenImage,
+			'tenImage': tenImage.clip(0.0, 1.0) if self.training == False else tenImage,
 			'tenDisparity': torch.nn.functional.threshold(input=tenDisparity, threshold=0.0, value=0.0)
 		}
 	# end

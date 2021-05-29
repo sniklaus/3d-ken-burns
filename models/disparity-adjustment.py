@@ -47,7 +47,7 @@ def disparity_adjustment(tenImage, tenDisparity):
 			# end
 
 			boolUsed[intMerge] = True
-			tenMask = (tenMask + tenMerge).clamp(0.0, 1.0)
+			tenMask = (tenMask + tenMerge).clip(0.0, 1.0)
 		# end
 
 		tenMasks.append(tenMask)
