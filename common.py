@@ -434,7 +434,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
+		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
 	)
 
 	n = tenZee.nelement()
@@ -497,7 +497,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
+		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
 	)
 
 	n = tenInput.shape[0] * tenInput.shape[2]
@@ -598,7 +598,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr(), tenOutput.data_ptr() ]
+		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr(), tenOutput.data_ptr() ]
 	)
 
 	return tenOutput[:, :-1, :, :] / (tenOutput[:, -1:, :, :] + 0.0000001), tenOutput[:, -1:, :, :].detach().clone()
@@ -703,7 +703,7 @@ def fill_disocclusion(tenInput, tenDepth):
 	}))(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
-		args=[ n, tenInput.data_ptr(), tenDepth.data_ptr(), tenOutput.data_ptr() ]
+		args=[ cupy.int32(n), tenInput.data_ptr(), tenDepth.data_ptr(), tenOutput.data_ptr() ]
 	)
 
 	return tenOutput
