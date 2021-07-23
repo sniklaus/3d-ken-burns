@@ -1,6 +1,6 @@
 class Basic(torch.nn.Module):
 	def __init__(self, strType, intChannels):
-		super(Basic, self).__init__()
+		super().__init__()
 
 		if strType == 'relu-conv-relu-conv':
 			self.netMain = torch.nn.Sequential(
@@ -41,7 +41,7 @@ class Basic(torch.nn.Module):
 
 class Downsample(torch.nn.Module):
 	def __init__(self, intChannels):
-		super(Downsample, self).__init__()
+		super().__init__()
 
 		self.netMain = torch.nn.Sequential(
 			torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
@@ -58,7 +58,7 @@ class Downsample(torch.nn.Module):
 
 class Upsample(torch.nn.Module):
 	def __init__(self, intChannels):
-		super(Upsample, self).__init__()
+		super().__init__()
 
 		self.netMain = torch.nn.Sequential(
 			torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
@@ -76,7 +76,7 @@ class Upsample(torch.nn.Module):
 
 class Inpaint(torch.nn.Module):
 	def __init__(self):
-		super(Inpaint, self).__init__()
+		super().__init__()
 
 		self.netContext = torch.nn.Sequential(
 			torch.nn.Conv2d(in_channels=4, out_channels=64, kernel_size=3, stride=1, padding=1, bias=True),

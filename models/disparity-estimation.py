@@ -1,6 +1,6 @@
 class Basic(torch.nn.Module):
 	def __init__(self, strType, intChannels):
-		super(Basic, self).__init__()
+		super().__init__()
 
 		if strType == 'relu-conv-relu-conv':
 			self.netMain = torch.nn.Sequential(
@@ -41,7 +41,7 @@ class Basic(torch.nn.Module):
 
 class Downsample(torch.nn.Module):
 	def __init__(self, intChannels):
-		super(Downsample, self).__init__()
+		super().__init__()
 
 		self.netMain = torch.nn.Sequential(
 			torch.nn.PReLU(num_parameters=intChannels[0], init=0.25),
@@ -58,7 +58,7 @@ class Downsample(torch.nn.Module):
 
 class Upsample(torch.nn.Module):
 	def __init__(self, intChannels):
-		super(Upsample, self).__init__()
+		super().__init__()
 
 		self.netMain = torch.nn.Sequential(
 			torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
@@ -76,7 +76,7 @@ class Upsample(torch.nn.Module):
 
 class Semantics(torch.nn.Module):
 	def __init__(self):
-		super(Semantics, self).__init__()
+		super().__init__()
 
 		netVgg = torchvision.models.vgg19_bn(pretrained=True).features.eval()
 
@@ -113,7 +113,7 @@ class Semantics(torch.nn.Module):
 
 class Disparity(torch.nn.Module):
 	def __init__(self):
-		super(Disparity, self).__init__()
+		super().__init__()
 
 		self.netImage = torch.nn.Conv2d(in_channels=3, out_channels=32, kernel_size=7, stride=2, padding=3)
 		self.netSemantics = torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1)
