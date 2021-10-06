@@ -63,7 +63,7 @@ for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:]
 if __name__ == '__main__':
 	npyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
 
-	fltFocal = max(npyImage.shape[0], npyImage.shape[1]) / 2.0
+	fltFocal = max(npyImage.shape[1], npyImage.shape[0]) / 2.0
 	fltBaseline = 40.0
 
 	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1)[None, :, :, :].astype(numpy.float32) * (1.0 / 255.0))).cuda()
