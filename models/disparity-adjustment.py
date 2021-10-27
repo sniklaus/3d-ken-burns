@@ -61,6 +61,8 @@ def disparity_adjustment(tenImage, tenDisparity):
 		tenPlane = torch.nn.functional.max_pool2d(input=tenPlane.neg(), kernel_size=3, stride=1, padding=1).neg()
 		tenPlane = torch.nn.functional.max_pool2d(input=tenPlane.neg(), kernel_size=3, stride=1, padding=1).neg()
 
+		if tenPlane.sum().item() == 0: continue
+
 		intLeft = (tenPlane.sum(2, True) > 0.0).flatten().nonzero()[0].item()
 		intTop = (tenPlane.sum(3, True) > 0.0).flatten().nonzero()[0].item()
 		intRight = (tenPlane.sum(2, True) > 0.0).flatten().nonzero()[-1].item()
