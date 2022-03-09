@@ -101,11 +101,9 @@ class Semantics(torch.nn.Module):
 	# end
 
 	def forward(self, tenInput):
-		tenPreprocessed = tenInput[:, [ 2, 1, 0 ], :, :]
-
-		tenPreprocessed[:, 0, :, :] = (tenPreprocessed[:, 0, :, :] - 0.485) / 0.229
-		tenPreprocessed[:, 1, :, :] = (tenPreprocessed[:, 1, :, :] - 0.456) / 0.224
-		tenPreprocessed[:, 2, :, :] = (tenPreprocessed[:, 2, :, :] - 0.406) / 0.225
+        tenPreprocessed = tenInput.flip([1])
+        tenPreprocessed = tenPreprocessed - torch.tensor(data=[0.485, 0.456, 0.406], dtype=tenPreprocessed.dtype, device=tenPreprocessed.device).view(1, 3, 1, 1)
+        tenPreprocessed = tenPreprocessed * torch.tensor(data=[1.0 / 0.229, 1.0 / 0.224, 1.0 / 0.225], dtype=tenPreprocessed.dtype, device=tenPreprocessed.device).view(1, 3, 1, 1)
 
 		return self.netVgg(tenPreprocessed)
 	# end

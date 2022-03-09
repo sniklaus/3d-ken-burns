@@ -232,7 +232,7 @@ def preprocess_kernel(strKernel, objVariables):
 		strTensor = objMatch.group(4)
 		intSizes = objVariables[strTensor].size()
 
-		strKernel = strKernel.replace(objMatch.group(), str(intSizes[intArg]))
+		strKernel = strKernel.replace(objMatch.group(), str(intSizes[intArg] if torch.is_tensor(intSizes[intArg]) == False else intSizes[intArg].item()))
 	# end
 
 	while True:
@@ -247,7 +247,7 @@ def preprocess_kernel(strKernel, objVariables):
 		strTensor = objMatch.group(4)
 		intStrides = objVariables[strTensor].stride()
 
-		strKernel = strKernel.replace(objMatch.group(), str(intStrides[intArg]))
+		strKernel = strKernel.replace(objMatch.group(), str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()))
 	# end
 
 	while True:
@@ -262,7 +262,7 @@ def preprocess_kernel(strKernel, objVariables):
 
 		strTensor = strArgs[0]
 		intStrides = objVariables[strTensor].stride()
-		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg]) + ')' for intArg in range(intArgs) ]
+		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()) + ')' for intArg in range(intArgs) ]
 
 		strKernel = strKernel.replace(objMatch.group(0), '(' + str.join('+', strIndex) + ')')
 	# end
@@ -279,7 +279,7 @@ def preprocess_kernel(strKernel, objVariables):
 
 		strTensor = strArgs[0]
 		intStrides = objVariables[strTensor].stride()
-		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg]) + ')' for intArg in range(intArgs) ]
+		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()) + ')' for intArg in range(intArgs) ]
 
 		strKernel = strKernel.replace(objMatch.group(0), strTensor + '[' + str.join('+', strIndex) + ']')
 	# end

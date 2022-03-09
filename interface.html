@@ -7,14 +7,14 @@
 
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/5.14.0/load-image.all.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/5.16.0/load-image.all.min.js"></script>
 
 		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" />
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
 
-		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.0/css/bootstrap.min.css" />
+		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" />
 
-		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+		<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 	</head>
 	<body style="background-color:#232323;">
 		<div style="left:50%; position:absolute; top:50%; transform:translate(-50%, -50%);">
@@ -35,7 +35,7 @@
 						</td>
 						<td>
 							<div style="padding:20px 20px 20px 20px; width:100px;">
-								<button class="btn btn-primary" id="plause" style="display:inline-block; font-size:24px; padding:10px 20px 10px 20px; width:100%;"><i class="fa fa-play"></i></button>
+								<button class="btn btn-primary" id="plause" style="display:inline-block; font-size:24px; padding:10px 20px 10px 20px; width:100%;"><i class="fa-solid fa-play"></i></button>
 							</div>
 						</td>
 						<td>
@@ -51,9 +51,9 @@
 		</div>
 
 		<div style="bottom:16px; position:fixed; right:16px;">
-			<button class="btn btn-primary" id="autozoom" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-magic"></i></button>
-			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa fa-folder-open"></i><input id="file" type="file" style="cursor:pointer; bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
-			<a class="btn btn-primary" id="save" href="/get_result" target="_blank" style="font-size:14px; position:relative; z-index:2;"><i class="fa fa-save"></i></a>
+			<button class="btn btn-primary" id="autozoom" style="font-size:14px; position:relative; z-index:2;"><i class="fa-solid fa-wand-magic"></i></button>
+			<button class="btn btn-primary" id="load" style="font-size:14px; position:relative;"><i class="fa-solid fa-folder-open"></i><input id="file" type="file" style="cursor:pointer; bottom:0px; height:100%; left:0px; opacity:0.0; position:absolute; right:0px; top:0px; width:100%; z-index:1;" /></button>
+			<a class="btn btn-primary" id="save" href="/get_result" target="_blank" style="font-size:14px; position:relative; z-index:2;"><i class="fa-solid fa-floppy-disk"></i></a>
 		</div>
 
 		<script type="text/javascript">
@@ -87,11 +87,11 @@
 			jQuery('#plause')
 				.on('click', function() {
 					if (jQuery('#plause').find('i').hasClass('fa-play') === true) {
-						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-pause');
+						jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-pause');
 						jQuery.post('/update_mode', { 'strMode': 'automatic' });
 
 					} else if (jQuery('#plause').find('i').hasClass('fa-pause') === true) {
-						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+						jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-play');
 						jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 					}
@@ -100,7 +100,7 @@
 
 			jQuery('#autozoom')
 				.on('click', function() {
-					jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+					jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-play');
 					jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 					jQuery.post('/autozoom', {}, function(objData) {
@@ -125,7 +125,7 @@
 						});
 
 						window.setTimeout(function() {
-							jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-pause');
+							jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-pause');
 							jQuery.post('/update_mode', { 'strMode': 'automatic' });
 						}, 500);
 					});
@@ -142,7 +142,7 @@
 					}
 
 					loadImage(objEvent.target.files[0], function(objImage) {
-						jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+						jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-play');
 						jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 						jQuery('#from, #to')
@@ -177,7 +177,7 @@
 								objFrom.options.crop();
 							},
 							'crop': function() {
-								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+								jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 								jQuery.post('/update_from', {
@@ -209,7 +209,7 @@
 								objTo.options.crop();
 							},
 							'crop': function() {
-								jQuery('#plause').find('i').removeClass().addClass('fa').addClass('fa-play');
+								jQuery('#plause').find('i').removeClass().addClass('fa-solid').addClass('fa-play');
 								jQuery.post('/update_mode', { 'strMode': 'manual' });
 
 								jQuery.post('/update_to', {
