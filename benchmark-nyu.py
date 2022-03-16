@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-import torch
-import torchvision
-
 import base64
 import cupy
 import cv2
@@ -26,6 +23,8 @@ import shutil
 import sys
 import tempfile
 import time
+import torch
+import torchvision
 import zipfile
 
 ##########################################################
