@@ -7,10 +7,10 @@ This is a reference implementation of 3D Ken Burns Effect from a Single Image [1
 ## demo 
 Click the link below to run inference through Replicate's web demo:
 
-[Demo and Docker image on Replicate](https://replicate.com/sujaykhandekar/object-removal)
+[Demo and Docker image on Replicate](https://replicate.com/sniklaus/3d-ken-burns)
 
 
-<a href="https://replicate.com/sujaykhandekar/object-removal"><img src="https://replicate.com/sujaykhandekar/object-removal/badge"></a>
+<a href="https://replicate.com/sniklaus/3d-ken-burns"><img src="https://replicate.com/sniklaus/3d-ken-burns/badge"></a>
 
 ## setup
 Several functions are implemented in CUDA using CuPy, which is why CuPy is a required dependency. It can be installed using `pip install cupy` or alternatively using one of the provided [binary packages](https://docs.cupy.dev/en/stable/install.html#installing-cupy) as outlined in the CuPy repository. Please also make sure to have the `CUDA_HOME` environment variable configured.
