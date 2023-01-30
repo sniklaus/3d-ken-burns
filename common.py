@@ -40,10 +40,10 @@ def process_inpaint(tenShift):
 
 	tenMask = (objInpainted['tenExisting'] == 0.0).view(1, 1, -1)
 
-	objCommon['tenInpaImage'] = torch.cat([ objCommon['tenInpaImage'], objInpainted['tenImage'].view(1, 3, -1)[tenMask.expand(-1, 3, -1)].view(1, 3, -1) ], 2)
-	objCommon['tenInpaDisparity'] = torch.cat([ objCommon['tenInpaDisparity'], objInpainted['tenDisparity'].view(1, 1, -1)[tenMask.expand(-1, 1, -1)].view(1, 1, -1) ], 2)
-	objCommon['tenInpaDepth'] = torch.cat([ objCommon['tenInpaDepth'], objInpainted['tenDepth'].view(1, 1, -1)[tenMask.expand(-1, 1, -1)].view(1, 1, -1) ], 2)
-	objCommon['tenInpaPoints'] = torch.cat([ objCommon['tenInpaPoints'], objInpainted['tenPoints'].view(1, 3, -1)[tenMask.expand(-1, 3, -1)].view(1, 3, -1) ], 2)
+	objCommon['tenInpaImage'] = torch.cat([ objCommon['tenInpaImage'], objInpainted['tenImage'].view(1, 3, -1)[tenMask.repeat(1, 3, 1)].view(1, 3, -1) ], 2)
+	objCommon['tenInpaDisparity'] = torch.cat([ objCommon['tenInpaDisparity'], objInpainted['tenDisparity'].view(1, 1, -1)[tenMask.repeat(1, 1, 1)].view(1, 1, -1) ], 2)
+	objCommon['tenInpaDepth'] = torch.cat([ objCommon['tenInpaDepth'], objInpainted['tenDepth'].view(1, 1, -1)[tenMask.repeat(1, 1, 1)].view(1, 1, -1) ], 2)
+	objCommon['tenInpaPoints'] = torch.cat([ objCommon['tenInpaPoints'], objInpainted['tenPoints'].view(1, 3, -1)[tenMask.repeat(1, 3, 1)].view(1, 3, -1) ], 2)
 # end
 
 def process_shift(objSettings):
@@ -290,20 +290,18 @@ def preprocess_kernel(strKernel, objVariables):
 @cupy.memoize(for_each_device=True)
 def launch_kernel(strFunction, strKernel):
 	if 'CUDA_HOME' not in os.environ:
-		os.environ['CUDA_HOME'] = sorted(glob.glob('/usr/lib/cuda*') + glob.glob('/usr/local/cuda*'))[-1]
+		os.environ['CUDA_HOME'] = cupy.cuda.get_cuda_path()
 	# end
 
 	return cupy.cuda.compile_with_cache(strKernel, tuple([ '-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include' ])).get_function(strFunction)
 # end
 
 def depth_to_points(tenDepth, fltFocal):
-	tenHorizontal = torch.linspace((-0.5 * tenDepth.shape[3]) + 0.5, (0.5 * tenDepth.shape[3]) - 0.5, tenDepth.shape[3]).view(1, 1, 1, -1).expand(tenDepth.shape[0], -1, tenDepth.shape[2], -1)
+	tenHorizontal = torch.linspace(start=(-0.5 * tenDepth.shape[3]) + 0.5, end=(0.5 * tenDepth.shape[3]) - 0.5, steps=tenDepth.shape[3], dtype=tenDepth.dtype, device=tenDepth.device).view(1, 1, 1, -1).repeat(tenDepth.shape[0], 1, tenDepth.shape[2], 1)
 	tenHorizontal = tenHorizontal * (1.0 / fltFocal)
-	tenHorizontal = tenHorizontal.type_as(tenDepth)
 
-	tenVertical = torch.linspace((-0.5 * tenDepth.shape[2]) + 0.5, (0.5 * tenDepth.shape[2]) - 0.5, tenDepth.shape[2]).view(1, 1, -1, 1).expand(tenDepth.shape[0], -1, -1, tenDepth.shape[3])
+	tenVertical = torch.linspace(start=(-0.5 * tenDepth.shape[2]) + 0.5, end=(0.5 * tenDepth.shape[2]) - 0.5, steps=tenDepth.shape[2], dtype=tenDepth.dtype, device=tenDepth.device).view(1, 1, -1, 1).repeat(tenDepth.shape[0], 1, 1, tenDepth.shape[3])
 	tenVertical = tenVertical * (1.0 / fltFocal)
-	tenVertical = tenVertical.type_as(tenDepth)
 
 	return torch.cat([ tenDepth * tenHorizontal, tenDepth * tenVertical, tenDepth ], 1)
 # end
@@ -401,23 +399,23 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 			float fltSouthwest = (intNortheastX - fltOutputX)    * (fltOutputY    - intNortheastY);
 			float fltSoutheast = (fltOutputX    - intNorthwestX) * (fltOutputY    - intNorthwestY);
 
-			if ((fltNorthwest >= fltNortheast) & (fltNorthwest >= fltSouthwest) & (fltNorthwest >= fltSoutheast)) {
-				if ((intNorthwestX >= 0) & (intNorthwestX < SIZE_3(zee)) & (intNorthwestY >= 0) & (intNorthwestY < SIZE_2(zee))) {
+			if ((fltNorthwest >= fltNortheast) && (fltNorthwest >= fltSouthwest) && (fltNorthwest >= fltSoutheast)) {
+				if ((intNorthwestX >= 0) && (intNorthwestX < SIZE_3(zee)) && (intNorthwestY >= 0) && (intNorthwestY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intNorthwestY, intNorthwestX)], fltError);
 				}
 
-			} else if ((fltNortheast >= fltNorthwest) & (fltNortheast >= fltSouthwest) & (fltNortheast >= fltSoutheast)) {
-				if ((intNortheastX >= 0) & (intNortheastX < SIZE_3(zee)) & (intNortheastY >= 0) & (intNortheastY < SIZE_2(zee))) {
+			} else if ((fltNortheast >= fltNorthwest) && (fltNortheast >= fltSouthwest) && (fltNortheast >= fltSoutheast)) {
+				if ((intNortheastX >= 0) && (intNortheastX < SIZE_3(zee)) && (intNortheastY >= 0) && (intNortheastY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intNortheastY, intNortheastX)], fltError);
 				}
 
-			} else if ((fltSouthwest >= fltNorthwest) & (fltSouthwest >= fltNortheast) & (fltSouthwest >= fltSoutheast)) {
-				if ((intSouthwestX >= 0) & (intSouthwestX < SIZE_3(zee)) & (intSouthwestY >= 0) & (intSouthwestY < SIZE_2(zee))) {
+			} else if ((fltSouthwest >= fltNorthwest) && (fltSouthwest >= fltNortheast) && (fltSouthwest >= fltSoutheast)) {
+				if ((intSouthwestX >= 0) && (intSouthwestX < SIZE_3(zee)) && (intSouthwestY >= 0) && (intSouthwestY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intSouthwestY, intSouthwestX)], fltError);
 				}
 
-			} else if ((fltSoutheast >= fltNorthwest) & (fltSoutheast >= fltNortheast) & (fltSoutheast >= fltSouthwest)) {
-				if ((intSoutheastX >= 0) & (intSoutheastX < SIZE_3(zee)) & (intSoutheastY >= 0) & (intSoutheastY < SIZE_2(zee))) {
+			} else if ((fltSoutheast >= fltNorthwest) && (fltSoutheast >= fltNortheast) && (fltSoutheast >= fltSouthwest)) {
+				if ((intSoutheastX >= 0) && (intSoutheastX < SIZE_3(zee)) && (intSoutheastY >= 0) && (intSoutheastY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intSoutheastY, intSoutheastX)], fltError);
 				}
 
@@ -554,7 +552,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 			float fltSouthwest = (intNortheastX - fltOutputX)    * (fltOutputY    - intNortheastY);
 			float fltSoutheast = (fltOutputX    - intNorthwestX) * (fltOutputY    - intNorthwestY);
 
-			if ((intNorthwestX >= 0) & (intNorthwestX < SIZE_3(output)) & (intNorthwestY >= 0) & (intNorthwestY < SIZE_2(output))) {
+			if ((intNorthwestX >= 0) && (intNorthwestX < SIZE_3(output)) && (intNorthwestY >= 0) && (intNorthwestY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intNorthwestY, intNorthwestX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intNorthwestY, intNorthwestX)], VALUE_3(data, intSample, intData, intPoint) * fltNorthwest);
@@ -562,7 +560,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 				}
 			}
 
-			if ((intNortheastX >= 0) & (intNortheastX < SIZE_3(output)) & (intNortheastY >= 0) & (intNortheastY < SIZE_2(output))) {
+			if ((intNortheastX >= 0) && (intNortheastX < SIZE_3(output)) && (intNortheastY >= 0) && (intNortheastY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intNortheastY, intNortheastX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intNortheastY, intNortheastX)], VALUE_3(data, intSample, intData, intPoint) * fltNortheast);
@@ -570,7 +568,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 				}
 			}
 
-			if ((intSouthwestX >= 0) & (intSouthwestX < SIZE_3(output)) & (intSouthwestY >= 0) & (intSouthwestY < SIZE_2(output))) {
+			if ((intSouthwestX >= 0) && (intSouthwestX < SIZE_3(output)) && (intSouthwestY >= 0) && (intSouthwestY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intSouthwestY, intSouthwestX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intSouthwestY, intSouthwestX)], VALUE_3(data, intSample, intData, intPoint) * fltSouthwest);
@@ -578,7 +576,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 				}
 			}
 
-			if ((intSoutheastX >= 0) & (intSoutheastX < SIZE_3(output)) & (intSoutheastY >= 0) & (intSoutheastY < SIZE_2(output))) {
+			if ((intSoutheastX >= 0) && (intSoutheastX < SIZE_3(output)) && (intSoutheastY >= 0) && (intSoutheastY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intSoutheastY, intSoutheastX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intSoutheastY, intSoutheastX)], VALUE_3(data, intSample, intData, intPoint) * fltSoutheast);

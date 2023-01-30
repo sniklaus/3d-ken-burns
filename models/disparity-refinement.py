@@ -91,8 +91,8 @@ class Refine(torch.nn.Module):
 	# end
 
 	def forward(self, tenImage, tenDisparity):
-		tenMean = [ tenImage.view(tenImage.shape[0], -1).mean(1, True).view(tenImage.shape[0], 1, 1, 1), tenDisparity.view(tenDisparity.shape[0], -1).mean(1, True).view(tenDisparity.shape[0], 1, 1, 1) ]
-		tenStd = [ tenImage.view(tenImage.shape[0], -1).std(1, True).view(tenImage.shape[0], 1, 1, 1), tenDisparity.view(tenDisparity.shape[0], -1).std(1, True).view(tenDisparity.shape[0], 1, 1, 1) ]
+		tenMean = [ tenImage.mean([1, 2, 3], True), tenDisparity.mean([1, 2, 3], True) ]
+		tenStd = [ tenImage.std([1, 2, 3], False, True), tenDisparity.std([1, 2, 3], False, True) ]
 
 		tenImage = tenImage.clone()
 		tenImage -= tenMean[0]

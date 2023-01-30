@@ -30,8 +30,6 @@ import zipfile
 
 ##########################################################
 
-assert(int(str('').join(torch.__version__.split('.')[0:2])) >= 12) # requires at least pytorch version 1.2.0
-
 torch.set_grad_enabled(False) # make sure to not compute gradients for computational performance
 
 torch.backends.cudnn.enabled = True # make sure to use cudnn for computational performance
@@ -191,7 +189,7 @@ def get_live():
 def get_result():
 	strTempdir = tempfile.gettempdir() + '/kenburns-' + str(os.getpid()) + '-' + str.join('', [ random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for intCount in range(8) ]) + '-' + str(time.time()).split('.')[-1]
 
-	os.makedirs(strTempdir + '/')
+	os.makedirs(name=strTempdir + '/', exist_ok=False)
 
 	npyKenburns = process_kenburns({
 		'fltSteps': numpy.linspace(0.0, 1.0, 75).tolist(),
@@ -200,7 +198,7 @@ def get_result():
 		'boolInpaint': True
 	})
 
-	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyKenburns + list(reversed(npyKenburns))[1:] ], fps=25).write_videofile(strTempdir + '/kenburns.mp4')
+	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyKenburns + list(reversed(npyKenburns))[1:-1] ], fps=25).write_videofile(strTempdir + '/kenburns.mp4')
 
 	objKenburns = io.BytesIO(open(strTempdir + '/kenburns.mp4', 'rb').read())
 
@@ -209,4 +207,6 @@ def get_result():
 	return flask.send_file(filename_or_fp=objKenburns, mimetype='video/mp4', as_attachment=True, attachment_filename='kenburns.mp4', cache_timeout=-1)
 # end
 
-gevent.pywsgi.WSGIServer(listener=('0.0.0.0', 8080), application=objFlask).serve_forever()
+if __name__ == '__main__':
+	gevent.pywsgi.WSGIServer(listener=('0.0.0.0', 8080), application=objFlask).serve_forever()
+# end

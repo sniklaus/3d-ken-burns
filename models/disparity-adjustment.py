@@ -63,10 +63,10 @@ def disparity_adjustment(tenImage, tenDisparity):
 
 		if tenPlane.sum().item() == 0: continue
 
-		intLeft = (tenPlane.sum(2, True) > 0.0).flatten().nonzero()[0].item()
-		intTop = (tenPlane.sum(3, True) > 0.0).flatten().nonzero()[0].item()
-		intRight = (tenPlane.sum(2, True) > 0.0).flatten().nonzero()[-1].item()
-		intBottom = (tenPlane.sum(3, True) > 0.0).flatten().nonzero()[-1].item()
+		intLeft = (tenPlane.sum([2], True) > 0.0).flatten().nonzero()[0].item()
+		intTop = (tenPlane.sum([3], True) > 0.0).flatten().nonzero()[0].item()
+		intRight = (tenPlane.sum([2], True) > 0.0).flatten().nonzero()[-1].item()
+		intBottom = (tenPlane.sum([3], True) > 0.0).flatten().nonzero()[-1].item()
 
 		tenAdjusted = ((1.0 - tenAdjust) * tenAdjusted) + (tenAdjust * tenPlane[:, :, int(round(intTop + (0.97 * (intBottom - intTop)))):, :].max())
 	# end

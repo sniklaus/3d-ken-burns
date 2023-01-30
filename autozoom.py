@@ -30,8 +30,6 @@ import zipfile
 
 ##########################################################
 
-assert(int(str('').join(torch.__version__.split('.')[0:2])) >= 12) # requires at least pytorch version 1.2.0
-
 torch.set_grad_enabled(False) # make sure to not compute gradients for computational performance
 
 torch.backends.cudnn.enabled = True # make sure to use cudnn for computational performance
@@ -94,5 +92,5 @@ if __name__ == '__main__':
 		'boolInpaint': True
 	})
 
-	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:] ], fps=25).write_videofile(arguments_strOut)
+	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:-1] ], fps=25).write_videofile(arguments_strOut)
 # end

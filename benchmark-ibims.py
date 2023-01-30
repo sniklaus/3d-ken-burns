@@ -29,8 +29,6 @@ import zipfile
 
 ##########################################################
 
-assert(int(str('').join(torch.__version__.split('.')[0:2])) >= 12) # requires at least pytorch version 1.2.0
-
 torch.set_grad_enabled(False) # make sure to not compute gradients for computational performance
 
 torch.backends.cudnn.enabled = True # make sure to use cudnn for computational performance
@@ -113,20 +111,20 @@ with zipfile.ZipFile('./benchmark-ibims-data.zip', 'r') as objZip:
 
 		if objMat['mask_wall_paras'][0][0].size > 0:
 			pe_fla_wall, pe_ori_wall = compute_planarity_error(objMat['depth'][0][0] * valid, pred * valid, objMat['mask_wall_paras'][0][0], objMat['mask_wall'][0][0] * valid, objMat['calib'][0][0])
-			pe_fla.extend(pe_fla_wall.tolist())
-			pe_ori.extend(pe_ori_wall.tolist())
+			pe_fla += pe_fla_wall.tolist()
+			pe_ori += pe_ori_wall.tolist()
 		# end
 
 		if objMat['mask_table_paras'][0][0].size > 0:
 			pe_fla_table, pe_ori_table = compute_planarity_error(objMat['depth'][0][0] * valid, pred * valid, objMat['mask_table_paras'][0][0], objMat['mask_table'][0][0] * valid, objMat['calib'][0][0])
-			pe_fla.extend(pe_fla_table.tolist())
-			pe_ori.extend(pe_ori_table.tolist())
+			pe_fla += pe_fla_table.tolist()
+			pe_ori += pe_ori_table.tolist()
 		# end
 
 		if objMat['mask_floor_paras'][0][0].size > 0:
 			pe_fla_floor, pe_ori_floor = compute_planarity_error(objMat['depth'][0][0] * valid, pred * valid, objMat['mask_floor_paras'][0][0], objMat['mask_floor'][0][0] * valid, objMat['calib'][0][0])
-			pe_fla.extend(pe_fla_floor.tolist())
-			pe_ori.extend(pe_ori_floor.tolist())
+			pe_fla += pe_fla_floor.tolist()
+			pe_ori += pe_ori_floor.tolist()
 		# end
 	# end
 # end
