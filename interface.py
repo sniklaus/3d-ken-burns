@@ -187,7 +187,7 @@ def get_live():
 
 @objFlask.route(rule='/get_result', methods=[ 'GET' ])
 def get_result():
-	strTempdir = tempfile.gettempdir() + '/kenburns-' + str(os.getpid()) + '-' + str.join('', [ random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for intCount in range(8) ]) + '-' + str(time.time()).split('.')[-1]
+	strTempdir = tempfile.gettempdir() + '/kenburns-' + format(time.time(), '.6f') + '-' + str(os.getpid()) + '-' + str.join('', [random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for intCount in range(8)])
 
 	os.makedirs(name=strTempdir + '/', exist_ok=False)
 
