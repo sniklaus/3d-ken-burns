@@ -47,18 +47,24 @@ exec(open('./models/pointcloud-inpainting.py', 'r').read())
 
 ##########################################################
 
-arguments_strIn = './images/doublestrike.jpg'
-arguments_strOut = './autozoom.mp4'
+args_strIn = './images/doublestrike.jpg'
+args_strOut = './autozoom.mp4'
+args_strDepth = None
 
-for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:] + '=' for strParameter in sys.argv[1::2] ])[0]:
-	if strOption == '--in' and strArgument != '': arguments_strIn = strArgument # path to the input image
-	if strOption == '--out' and strArgument != '': arguments_strOut = strArgument # path to where the output should be stored
+for strOption, strArg in getopt.getopt(sys.argv[1:], '', [
+	'in=',
+	'out=',
+	'depth=',
+])[0]:
+	if strOption == '--in' and strArg != '': args_strIn = strArg # path to the input image
+	if strOption == '--out' and strArg != '': args_strOut = strArg # path to where the output should be stored
+	if strOption == '--depth' and strArg != '': args_strDepth = strArg # optional path to a depth map in numpy format
 # end
 
 ##########################################################
 
 if __name__ == '__main__':
-	npyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
+	npyImage = cv2.imread(filename=args_strIn, flags=cv2.IMREAD_COLOR)
 
 	intWidth = npyImage.shape[1]
 	intHeight = npyImage.shape[0]
@@ -70,7 +76,7 @@ if __name__ == '__main__':
 
 	npyImage = cv2.resize(src=npyImage, dsize=(intWidth, intHeight), fx=0.0, fy=0.0, interpolation=cv2.INTER_AREA)
 
-	process_load(npyImage, {})
+	process_load(npyImage, {} if args_strDepth is None else {'npyDepth': numpy.load(args_strDepth)})
 
 	objFrom = {
 		'fltCenterU': intWidth / 2.0,
@@ -92,5 +98,5 @@ if __name__ == '__main__':
 		'boolInpaint': True
 	})
 
-	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:-1] ], fps=25).write_videofile(arguments_strOut)
+	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:-1] ], fps=25).write_videofile(args_strOut)
 # end

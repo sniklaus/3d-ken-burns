@@ -84,7 +84,7 @@ def load_image():
 	process_load(objPlayback['npyImage'], {})
 
 	for fltX, fltY in [ (100.0, 0.0), (-100.0, 0.0), (0.0, 100.0), (0.0, -100.0) ]:
-		process_inpaint(torch.FloatTensor([ fltX, fltY, 0.0 ]).view(1, 3, 1).cuda())
+		process_inpaint(torch.tensor(data=[[[fltX], [fltY], [0.0]]], dtype=torch.float32, device=torch.device('cuda')))
 	# end
 
 	return ''

@@ -5,11 +5,20 @@ def process_load(npyImage, objSettings):
 	objCommon['intHeight'] = npyImage.shape[0]
 
 	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1)[None, :, :, :].astype(numpy.float32) * (1.0 / 255.0))).cuda()
-	tenDisparity = disparity_estimation(tenImage)
-	tenDisparity = disparity_adjustment(tenImage, tenDisparity)
-	tenDisparity = disparity_refinement(tenImage, tenDisparity)
-	tenDisparity = tenDisparity / tenDisparity.max() * objCommon['fltBaseline']
-	tenDepth = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDisparity + 0.0000001)
+
+	if 'npyDepth' not in objSettings:
+		tenDisparity = disparity_estimation(tenImage)
+		tenDisparity = disparity_adjustment(tenImage, tenDisparity)
+		tenDisparity = disparity_refinement(tenImage, tenDisparity)
+		tenDisparity = tenDisparity / tenDisparity.max() * objCommon['fltBaseline']
+		tenDepth = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDisparity + 0.0000001)
+
+	elif 'npyDepth' in objSettings:
+		tenDepth = torch.FloatTensor(numpy.ascontiguousarray(numpy.atleast_3d(objSettings['npyDepth']).astype(numpy.float32).transpose(2, 0, 1)[None, :, :, :])).cuda()
+		tenDisparity = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDepth + 0.0000001)
+
+	# end
+
 	tenValid = (spatial_filter(tenDisparity / tenDisparity.max(), 'laplacian').abs() < 0.03).float()
 	tenPoints = depth_to_points(tenDepth * tenValid, objCommon['fltFocal'])
 	tenUnaltered = depth_to_points(tenDepth, objCommon['fltFocal'])
@@ -61,7 +70,7 @@ def process_shift(objSettings):
 	fltShiftY = fltClosestFromY - fltClosestToY
 	fltShiftZ = objSettings['fltDepthTo'] - objSettings['fltDepthFrom']
 
-	tenShift = torch.FloatTensor([ fltShiftX, fltShiftY, fltShiftZ ]).view(1, 3, 1).cuda()
+	tenShift = torch.tensor(data=[[[fltShiftX], [fltShiftY], [fltShiftZ]]], dtype=torch.float32, device=torch.device('cuda'))
 
 	tenPoints = objSettings['tenPoints'].clone()
 
@@ -140,7 +149,7 @@ def process_kenburns(objSettings):
 		objCommon['tenInpaDepth'] = objCommon['tenRawDepth'].view(1, 1, -1)
 		objCommon['tenInpaPoints'] = objCommon['tenRawPoints'].view(1, 3, -1)
 
-		for fltStep in [ 0.0, 1.0 ]:
+		for fltStep in [ 1.0 ]:
 			fltFrom = 1.0 - fltStep
 			fltTo = 1.0 - fltFrom
 

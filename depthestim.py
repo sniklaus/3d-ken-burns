@@ -47,18 +47,21 @@ exec(open('./models/pointcloud-inpainting.py', 'r').read())
 
 ##########################################################
 
-arguments_strIn = './images/doublestrike.jpg'
-arguments_strOut = './depthestim.npy'
+args_strIn = './images/doublestrike.jpg'
+args_strOut = './depthestim.npy'
 
-for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:] + '=' for strParameter in sys.argv[1::2] ])[0]:
-	if strOption == '--in' and strArgument != '': arguments_strIn = strArgument # path to the input image
-	if strOption == '--out' and strArgument != '': arguments_strOut = strArgument # path to where the output should be stored
+for strOption, strArg in getopt.getopt(sys.argv[1:], '', [
+	'in=',
+	'out=',
+])[0]:
+	if strOption == '--in' and strArg != '': args_strIn = strArg # path to the input image
+	if strOption == '--out' and strArg != '': args_strOut = strArg # path to where the output should be stored
 # end
 
 ##########################################################
 
 if __name__ == '__main__':
-	npyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
+	npyImage = cv2.imread(filename=args_strIn, flags=cv2.IMREAD_COLOR)
 
 	fltFocal = max(npyImage.shape[1], npyImage.shape[0]) / 2.0
 	fltBaseline = 40.0
@@ -72,7 +75,7 @@ if __name__ == '__main__':
 	npyDisparity = tenDisparity[0, 0, :, :].cpu().numpy()
 	npyDepth = tenDepth[0, 0, :, :].cpu().numpy()
 
-	cv2.imwrite(filename=arguments_strOut.replace('.npy', '.png'), img=(npyDisparity / fltBaseline * 255.0).clip(0.0, 255.0).astype(numpy.uint8))
+	cv2.imwrite(filename=args_strOut.replace('.npy', '.png'), img=(npyDisparity / fltBaseline * 255.0).clip(0.0, 255.0).astype(numpy.uint8))
 
-	numpy.save(arguments_strOut, npyDepth)
+	numpy.save(args_strOut, npyDepth)
 # end
