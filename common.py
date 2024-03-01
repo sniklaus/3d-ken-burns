@@ -298,11 +298,11 @@ def preprocess_kernel(strKernel, objVariables):
 
 @cupy.memoize(for_each_device=True)
 def launch_kernel(strFunction, strKernel):
-	if 'CUDA_HOME' not in os.environ:
-		os.environ['CUDA_HOME'] = cupy.cuda.get_cuda_path()
-	# end
+    if 'CUDA_HOME' not in os.environ:
+        os.environ['CUDA_HOME'] = cupy.cuda.get_cuda_path()
+    # end
 
-	return cupy.cuda.compile_with_cache(strKernel, tuple([ '-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include' ])).get_function(strFunction)
+    return cupy.RawKernel(strKernel, strFunction, tuple(['-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include']))
 # end
 
 def depth_to_points(tenDepth, fltFocal):
