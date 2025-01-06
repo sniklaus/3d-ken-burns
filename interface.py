@@ -12,7 +12,6 @@ import h5py
 import io
 import math
 import moviepy
-import moviepy.editor
 import numpy
 import os
 import random
@@ -69,6 +68,7 @@ objPlayback = {
 }
 
 objFlask = flask.Flask(import_name=__name__, static_url_path='', static_folder=os.path.abspath('./'))
+objFlask.json.sort_keys = False
 
 @objFlask.route(rule='/', methods=[ 'GET' ])
 def index():
@@ -187,7 +187,7 @@ def get_live():
 
 @objFlask.route(rule='/get_result', methods=[ 'GET' ])
 def get_result():
-	strTempdir = tempfile.gettempdir() + '/kenburns-' + format(time.time(), '.6f') + '-' + str(os.getpid()) + '-' + str.join('', [random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for intCount in range(8)])
+	strTempdir = tempfile.gettempdir() + '/kenburns-' + format(time.time(), '.6f') + '-' + str(os.getpid()) + '-' + str().join([random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for intCount in range(8)])
 
 	os.makedirs(name=strTempdir + '/', exist_ok=False)
 
@@ -198,7 +198,7 @@ def get_result():
 		'boolInpaint': True
 	})
 
-	moviepy.editor.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyKenburns + list(reversed(npyKenburns))[1:-1] ], fps=25).write_videofile(strTempdir + '/kenburns.mp4')
+	moviepy.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyKenburns + list(reversed(npyKenburns))[1:-1] ], fps=25).write_videofile(strTempdir + '/kenburns.mp4')
 
 	objKenburns = io.BytesIO(open(strTempdir + '/kenburns.mp4', 'rb').read())
 

@@ -191,7 +191,7 @@ class Inpaint(torch.nn.Module):
 	# end
 # end
 
-netInpaint = Inpaint().cuda().eval()
+netInpaint = Inpaint().cuda().train(False)
 netInpaint.load_state_dict({ strKey.replace('module', 'net'): tenWeight for strKey, tenWeight in torch.hub.load_state_dict_from_url(url='http://content.sniklaus.com/kenburns/network-inpainting.pytorch', file_name='kenburns-inpainting').items() })
 
 def pointcloud_inpainting(tenImage, tenDisparity, tenShift):

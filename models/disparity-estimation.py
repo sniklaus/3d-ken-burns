@@ -78,7 +78,7 @@ class Semantics(torch.nn.Module):
 	def __init__(self):
 		super().__init__()
 
-		netVgg = torchvision.models.vgg19_bn(pretrained=True).features.eval()
+		netVgg = torchvision.models.vgg19_bn(pretrained=True).features.train(False)
 
 		self.netVgg = torch.nn.Sequential(
 			netVgg[0:3],
@@ -189,8 +189,8 @@ class Disparity(torch.nn.Module):
 	# end
 # end
 
-netSemantics = Semantics().cuda().eval()
-netDisparity = Disparity().cuda().eval()
+netSemantics = Semantics().cuda().train(False)
+netDisparity = Disparity().cuda().train(False)
 netDisparity.load_state_dict({ strKey.replace('module', 'net'): tenWeight for strKey, tenWeight in torch.hub.load_state_dict_from_url(url='http://content.sniklaus.com/kenburns/network-disparity.pytorch', file_name='kenburns-disparity').items() })
 
 def disparity_estimation(tenImage):

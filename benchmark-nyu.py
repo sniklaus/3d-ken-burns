@@ -12,7 +12,6 @@ import h5py
 import io
 import math
 import moviepy
-import moviepy.editor
 import numpy
 import os
 import random
@@ -95,7 +94,7 @@ for intTest in intTests:
 	tenDisparity = torch.nn.functional.interpolate(input=tenDisparity, size=(tenImage.shape[2], tenImage.shape[3]), mode='bilinear', align_corners=False) * (max(tenImage.shape[2], tenImage.shape[3]) / 256.0)
 	tenDepth = 1.0 / tenDisparity
 
-	npyEstimate = tenDepth[0, 0, :, :].cpu().numpy()
+	npyEstimate = tenDepth[0, 0, :, :].numpy(force=True)
 	npyLstsqa = numpy.stack([npyEstimate.flatten(), numpy.full(npyEstimate.flatten().shape, 1.0, numpy.float32)], 1)
 	npyLstsqb = npyReference.flatten()
 	npyScalebias = numpy.linalg.lstsq(npyLstsqa, npyLstsqb, None)[0]
@@ -104,7 +103,7 @@ for intTest in intTests:
 	fltAbsrel.append(((npyEstimate - npyReference).__abs__() / npyReference).mean().item())
 	fltLogten.append((numpy.log10(npyEstimate) - numpy.log10(npyReference)).__abs__().mean().item())
 	fltSqrel.append(((npyEstimate - npyReference).__pow__(2.0) / npyReference).mean().item())
-	fltRmse.append(numpy.sqrt((npyEstimate - npyReference).__pow__(2.0).mean()).item())
+	fltRmse.append((npyEstimate - npyReference).__pow__(2.0).mean().__pow__(0.5).item())
 	fltThr1.append((numpy.maximum((npyEstimate / npyReference), (npyReference / npyEstimate)) < 1.25 ** 1).mean().item())
 	fltThr2.append((numpy.maximum((npyEstimate / npyReference), (npyReference / npyEstimate)) < 1.25 ** 2).mean().item())
 	fltThr3.append((numpy.maximum((npyEstimate / npyReference), (npyReference / npyEstimate)) < 1.25 ** 3).mean().item())

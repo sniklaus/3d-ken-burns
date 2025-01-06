@@ -12,7 +12,6 @@ import h5py
 import io
 import math
 import moviepy
-import moviepy.editor
 import numpy
 import os
 import random
@@ -99,7 +98,7 @@ with zipfile.ZipFile('./benchmark-ibims-data.zip', 'r') as objZip:
 
 		valid = objMat['mask_transp'][0][0] * objMat['mask_invalid'][0][0] * (objMat['depth'][0][0] != 0.0)
 
-		pred = tenDepth[0, 0, :, :].cpu().numpy()
+		pred = tenDepth[0, 0, :, :].numpy(force=True)
 		npyLstsqa = numpy.stack([pred[valid == 1.0].flatten(), numpy.full([int((valid == 1.0).sum().item())], 1.0, numpy.float32)], 1)
 		npyLstsqb = objMat['depth'][0][0][valid == 1.0].flatten()
 		npyScalebias = numpy.linalg.lstsq(npyLstsqa, npyLstsqb, None)[0]

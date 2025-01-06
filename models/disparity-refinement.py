@@ -122,7 +122,7 @@ class Refine(torch.nn.Module):
 	# end
 # end
 
-netRefine = Refine().cuda().eval()
+netRefine = Refine().cuda().train(False)
 netRefine.load_state_dict({ strKey.replace('module', 'net'): tenWeight for strKey, tenWeight in torch.hub.load_state_dict_from_url(url='http://content.sniklaus.com/kenburns/network-refinement.pytorch', file_name='kenburns-refinement').items() })
 
 def disparity_refinement(tenImage, tenDisparity):

@@ -12,7 +12,6 @@ import h5py
 import io
 import math
 import moviepy
-import moviepy.editor
 import numpy
 import os
 import random
@@ -72,8 +71,8 @@ if __name__ == '__main__':
 	tenDisparity = torch.nn.functional.interpolate(input=tenDisparity, size=(tenImage.shape[2], tenImage.shape[3]), mode='bilinear', align_corners=False) * (max(tenImage.shape[2], tenImage.shape[3]) / 256.0)
 	tenDepth = (fltFocal * fltBaseline) / (tenDisparity + 0.0000001)
 
-	npyDisparity = tenDisparity[0, 0, :, :].cpu().numpy()
-	npyDepth = tenDepth[0, 0, :, :].cpu().numpy()
+	npyDisparity = tenDisparity[0, 0, :, :].numpy(force=True)
+	npyDepth = tenDepth[0, 0, :, :].numpy(force=True)
 
 	cv2.imwrite(filename=args_strOut.replace('.npy', '.png'), img=(npyDisparity / fltBaseline * 255.0).clip(0.0, 255.0).astype(numpy.uint8))
 

@@ -25,7 +25,7 @@ def process_load(npyImage, objSettings):
 
 	objCommon['fltDispmin'] = tenDisparity.min().item()
 	objCommon['fltDispmax'] = tenDisparity.max().item()
-	objCommon['objDepthrange'] = cv2.minMaxLoc(src=tenDepth[0, 0, 128:-128, 128:-128].detach().cpu().numpy(), mask=None)
+	objCommon['objDepthrange'] = cv2.minMaxLoc(src=tenDepth[0, 0, 128:-128, 128:-128].numpy(force=True), mask=None)
 	objCommon['tenRawImage'] = tenImage
 	objCommon['tenRawDisparity'] = tenDisparity
 	objCommon['tenRawDepth'] = tenDepth
@@ -197,7 +197,7 @@ def process_kenburns(objSettings):
 
 		tenRender = fill_disocclusion(tenRender, tenRender[:, 3:4, :, :] * (tenExisting > 0.0).float())
 
-		npyOutput = (tenRender[0, 0:3, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255.0).clip(0.0, 255.0).astype(numpy.uint8)
+		npyOutput = (tenRender[0, 0:3, :, :].numpy(force=True).transpose(1, 2, 0) * 255.0).clip(0.0, 255.0).astype(numpy.uint8)
 		npyOutput = cv2.getRectSubPix(image=npyOutput, patchSize=(max(objSettings['objFrom']['intCropWidth'], objSettings['objTo']['intCropWidth']), max(objSettings['objFrom']['intCropHeight'], objSettings['objTo']['intCropHeight'])), center=(objCommon['intWidth'] / 2.0, objCommon['intHeight'] / 2.0))
 		npyOutput = cv2.resize(src=npyOutput, dsize=(objCommon['intWidth'], objCommon['intHeight']), fx=0.0, fy=0.0, interpolation=cv2.INTER_LINEAR)
 
@@ -273,7 +273,7 @@ def preprocess_kernel(strKernel, objVariables):
 		intStrides = objVariables[strTensor].stride()
 		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()) + ')' for intArg in range(intArgs) ]
 
-		strKernel = strKernel.replace(objMatch.group(0), '(' + str.join('+', strIndex) + ')')
+		strKernel = strKernel.replace(objMatch.group(0), '(' + str('+').join(strIndex) + ')')
 	# end
 
 	while True:
@@ -290,7 +290,7 @@ def preprocess_kernel(strKernel, objVariables):
 		intStrides = objVariables[strTensor].stride()
 		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()) + ')' for intArg in range(intArgs) ]
 
-		strKernel = strKernel.replace(objMatch.group(0), strTensor + '[' + str.join('+', strIndex) + ']')
+		strKernel = strKernel.replace(objMatch.group(0), strTensor + '[' + str('+').join(strIndex) + ']')
 	# end
 
 	return strKernel

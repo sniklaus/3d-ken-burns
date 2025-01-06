@@ -1,4 +1,4 @@
-netMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).cuda().eval()
+netMaskrcnn = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).cuda().train(False)
 
 def disparity_adjustment(tenImage, tenDisparity):
 	assert(tenImage.shape[0] == 1)

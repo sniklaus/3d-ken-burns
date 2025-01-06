@@ -1,7 +1,11 @@
 # 3d-ken-burns
 This is a reference implementation of 3D Ken Burns Effect from a Single Image [1] using PyTorch. Given a single input image, it animates this still image with a virtual camera scan and zoom subject to motion parallax. Should you be making use of our work, please cite our paper [1].
 
-<a href="https://arxiv.org/abs/1909.05483" rel="Paper"><img src="http://content.sniklaus.com/kenburns/paper.jpg" alt="Paper" width="100%"></a>
+<a href="https://arxiv.org/abs/1909.05483"><img src="http://content.sniklaus.com/kenburns/paper.jpg" alt="Paper" width="100%"></a>
+
+For some interesting related work, please see: https://github.com/pierlj/ken-burns-effect
+<br />
+For some interesting discussions, please see: https://news.ycombinator.com/item?id=20978055
 
 ## setup
 Several functions are implemented in CUDA using CuPy, which is why CuPy is a required dependency. It can be installed using `pip install cupy` or alternatively using one of the provided [binary packages](https://docs.cupy.dev/en/stable/install.html#installing-cupy) as outlined in the CuPy repository. Please also make sure to have the `CUDA_HOME` environment variable configured.
@@ -30,7 +34,7 @@ python depthestim.py --in ./images/doublestrike.jpg --out ./depthestim.npy
 To benchmark the depth estimation, run `python benchmark-ibims.py` or `python benchmark-nyu.py`. You can use it to easily verify that the provided implementation runs as expected.
 
 ## colab
-If you do not have a suitable environment to run this projects then you could give Colab a try. It allows you to run the project in the cloud, free of charge. There are several people who provide Colab notebooks that should get you started. A few that I am aware of include one from [Arnaldo Gabriel](https://colab.research.google.com/github/agmm/colab-3d-ken-burns/blob/master/automatic-3d-ken-burns.ipynb), one from [Vlad Alex](https://towardsdatascience.com/very-spatial-507aa847179d), and one from [Ahmed Harmouche](https://github.com/wpmed92/3d-ken-burns-colab).
+If you do not have a suitable environment to run this projects then you could give Colab a try. It allows you to run the project in the cloud. There are several people who provide Colab notebooks that should get you started. A few that I am aware of include one from [Arnaldo Gabriel](https://colab.research.google.com/github/agmm/colab-3d-ken-burns/blob/master/automatic-3d-ken-burns.ipynb), one from [Vlad Alex](https://towardsdatascience.com/very-spatial-507aa847179d), and one from [Ahmed Harmouche](https://github.com/wpmed92/3d-ken-burns-colab).
 
 ## dataset
 This dataset is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode) and may only be used for non-commercial purposes. Please see the LICENSE file for more information.
@@ -87,7 +91,7 @@ This dataset is licensed under the [Creative Commons Attribution-NonCommercial-S
 Please note that this is an updated version of the dataset that we have used in our paper. So while it has fewer scenes in total, each sample capture now has a varying focal length which should help with generalizability. Furthermore, some examples are either over- or under-exposed and it would be a good idea to remove these outliers. Please see [#37](https://github.com/sniklaus/3d-ken-burns/issues/37), [#39](https://github.com/sniklaus/3d-ken-burns/issues/39), and [#40](https://github.com/sniklaus/3d-ken-burns/issues/40) for supplementary discussions.
 
 ## video
-<a href="http://content.sniklaus.com/kenburns/video.mp4" rel="Video"><img src="http://content.sniklaus.com/kenburns/video.jpg" alt="Video" width="100%"></a>
+<a href="http://content.sniklaus.com/kenburns/video.mp4"><img src="http://content.sniklaus.com/kenburns/video.jpg" alt="Video" width="100%"></a>
 
 ## license
 This is a project by Adobe Research. It is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode) and may only be used for non-commercial purposes. Please see the LICENSE file for more information.
