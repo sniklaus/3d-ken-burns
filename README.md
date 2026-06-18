@@ -7,6 +7,15 @@ For some interesting related work, please see: https://github.com/pierlj/ken-bur
 <br />
 For some interesting discussions, please see: https://news.ycombinator.com/item?id=20978055
 
+
+## demo 
+Click the link below to run inference through Replicate's web demo:
+
+[Demo and Docker image on Replicate](https://replicate.com/sniklaus/3d-ken-burns)
+
+
+<a href="https://replicate.com/sniklaus/3d-ken-burns"><img src="https://replicate.com/sniklaus/3d-ken-burns/badge"></a>
+
 ## setup
 Several functions are implemented in CUDA using CuPy, which is why CuPy is a required dependency. It can be installed using `pip install cupy` or alternatively using one of the provided [binary packages](https://docs.cupy.dev/en/stable/install.html#installing-cupy) as outlined in the CuPy repository. Please also make sure to have the `CUDA_HOME` environment variable configured.
 
@@ -32,6 +41,7 @@ python depthestim.py --in ./images/doublestrike.jpg --out ./depthestim.npy
 ```
 
 To benchmark the depth estimation, run `python benchmark-ibims.py` or `python benchmark-nyu.py`. You can use it to easily verify that the provided implementation runs as expected.
+
 
 ## colab
 If you do not have a suitable environment to run this projects then you could give Colab a try. It allows you to run the project in the cloud. There are several people who provide Colab notebooks that should get you started. A few that I am aware of include one from [Arnaldo Gabriel](https://colab.research.google.com/github/agmm/colab-3d-ken-burns/blob/master/automatic-3d-ken-burns.ipynb), one from [Vlad Alex](https://towardsdatascience.com/very-spatial-507aa847179d), and one from [Ahmed Harmouche](https://github.com/wpmed92/3d-ken-burns-colab).
