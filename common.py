@@ -47,7 +47,7 @@ def process_inpaint(tenShift):
 	objInpainted['tenPoints'] = objInpainted['tenPoints'].view(1, 3, -1)
 	objInpainted['tenPoints'] = objInpainted['tenPoints'] - tenShift
 
-	tenMask = (objInpainted['tenExisting'] == 0.0).view(1, 1, -1)
+	tenMask = ((objInpainted['tenExisting'] == 0.0) & (objInpainted['tenValid'] > 0.0)).view(1, 1, -1)
 
 	objCommon['tenInpaImage'] = torch.cat([ objCommon['tenInpaImage'], objInpainted['tenImage'].view(1, 3, -1)[tenMask.repeat(1, 3, 1)].view(1, 3, -1) ], 2)
 	objCommon['tenInpaDisparity'] = torch.cat([ objCommon['tenInpaDisparity'], objInpainted['tenDisparity'].view(1, 1, -1)[tenMask.repeat(1, 1, 1)].view(1, 1, -1) ], 2)
@@ -195,7 +195,7 @@ def process_kenburns(objSettings):
 
 		tenRender, tenExisting = render_pointcloud(tenPoints, torch.cat([ objCommon['tenInpaImage'], objCommon['tenInpaDepth'] ], 1).view(1, 4, -1), objCommon['intWidth'], objCommon['intHeight'], objCommon['fltFocal'], objCommon['fltBaseline'])
 
-		tenRender = fill_disocclusion(tenRender, tenRender[:, 3:4, :, :] * (tenExisting > 0.0).float())
+		tenRender = fill_disocclusion(tenRender, tenRender[:, 3:4, :, :] * (tenExisting > 0.001).float())
 
 		npyOutput = (tenRender[0, 0:3, :, :].numpy(force=True).transpose(1, 2, 0) * 255.0).clip(0.0, 255.0).astype(numpy.uint8)
 		npyOutput = cv2.getRectSubPix(image=npyOutput, patchSize=(max(objSettings['objFrom']['intCropWidth'], objSettings['objTo']['intCropWidth']), max(objSettings['objFrom']['intCropHeight'], objSettings['objTo']['intCropHeight'])), center=(objCommon['intWidth'] / 2.0, objCommon['intHeight'] / 2.0))
