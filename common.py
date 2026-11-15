@@ -297,7 +297,7 @@ def preprocess_kernel(strKernel, objVariables):
 # end
 
 @cupy.memoize(for_each_device=True)
-def launch_kernel(strFunction, strKernel):
+def compile_kernel(strFunction, strKernel):
     if 'CUDA_HOME' not in os.environ:
         if cupy.cuda.get_cuda_path() is not None:
             os.environ['CUDA_HOME'] = cupy.cuda.get_cuda_path()
@@ -309,6 +309,20 @@ def launch_kernel(strFunction, strKernel):
     # end
 
     return cupy.RawKernel(strKernel, strFunction)
+# end
+
+def launch_kernel(strFunction, strKernel, objDevice):
+    def launch(**kwargs):
+        with cupy.cuda.Device(objDevice.index):
+            if 'stream' not in kwargs:
+                kwargs['stream'] = type('Stream', (), {'ptr': torch.cuda.current_stream(objDevice).cuda_stream})()
+            # end
+
+            compile_kernel(strFunction, strKernel)(**kwargs)
+        # end
+    # end
+
+    return launch
 # end
 
 def depth_to_points(tenDepth, fltFocal):
@@ -444,7 +458,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 		'input': tenInput,
 		'data': tenData,
 		'zee': tenZee
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
@@ -507,7 +521,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 		'input': tenInput,
 		'data': tenData,
 		'zee': tenZee
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
@@ -608,7 +622,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 		'data': tenData,
 		'zee': tenZee,
 		'output': tenOutput
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr(), tenOutput.data_ptr() ]
@@ -713,7 +727,7 @@ def fill_disocclusion(tenInput, tenDepth):
 		'input': tenInput,
 		'depth': tenDepth,
 		'output': tenOutput
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenDepth.data_ptr(), tenOutput.data_ptr() ]
