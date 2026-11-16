@@ -64,9 +64,9 @@ for strOption, strArg in getopt.getopt(sys.argv[1:], '', [
 	if strOption == '--in' and strArg != '': args_strIn = strArg # path to the input image
 	if strOption == '--out' and strArg != '': args_strOut = strArg # path to where the output should be stored
 	if strOption == '--depth' and strArg != '': args_strDepth = strArg # optional path to a depth map in numpy format
-	if strOption == '--duration' and strArgument != '': args_fltDuration = float(strArgument) # duration the output in seconds
-	if strOption == '--fps' and strArgument != '': args_fltFps = float(strArgument) # frame rate of the output
-	if strOption == '--boomerang' and strArgument != '': args_boolBoomerang = bool(strArgument) # boomerang or just zoom
+	if strOption == '--duration' and strArg != '': args_fltDuration = float(strArg) # duration the output in seconds
+	if strOption == '--fps' and strArg != '': args_fltFps = float(strArg) # frame rate of the output
+	if strOption == '--boomerang' and strArg != '': args_boolBoomerang = (strArg == 'true') # boomerang or just zoom
 # end
 
 ##########################################################
