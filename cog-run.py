@@ -7,15 +7,11 @@ import moviepy
 import numpy
 import os
 import re
-import sys
 import tempfile
 import torch
 import torchvision
 
-strPath = sys.path[:]
-sys.path = [strPath for strPath in sys.path if strPath not in ('', '.', os.path.dirname(os.path.abspath(__file__)))]
 from cog import BasePredictor, Input, Path
-sys.path = strPath
 
 ##########################################################
 
