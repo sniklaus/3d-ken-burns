@@ -49,15 +49,24 @@ exec(open('./models/pointcloud-inpainting.py', 'r').read())
 args_strIn = './images/doublestrike.jpg'
 args_strOut = './autozoom.mp4'
 args_strDepth = None
+args_fltDuration = 3.0
+args_fltFps = 25.0
+args_boolBoomerang = True
 
 for strOption, strArg in getopt.getopt(sys.argv[1:], '', [
 	'in=',
 	'out=',
 	'depth=',
+	'duration=',
+	'fps=',
+	'boomerang=',
 ])[0]:
 	if strOption == '--in' and strArg != '': args_strIn = strArg # path to the input image
 	if strOption == '--out' and strArg != '': args_strOut = strArg # path to where the output should be stored
 	if strOption == '--depth' and strArg != '': args_strDepth = strArg # optional path to a depth map in numpy format
+	if strOption == '--duration' and strArgument != '': args_fltDuration = float(strArgument) # duration the output in seconds
+	if strOption == '--fps' and strArgument != '': args_fltFps = float(strArgument) # frame rate of the output
+	if strOption == '--boomerang' and strArgument != '': args_boolBoomerang = bool(strArgument) # boomerang or just zoom
 # end
 
 ##########################################################
@@ -91,11 +100,17 @@ if __name__ == '__main__':
 	})
 
 	npyResult = process_kenburns({
-		'fltSteps': numpy.linspace(0.0, 1.0, 75).tolist(),
+		'fltSteps': numpy.linspace(0.0, 1.0, round(args_fltDuration * args_fltFps)).tolist(),
 		'objFrom': objFrom,
 		'objTo': objTo,
 		'boolInpaint': True
 	})
+	
+	npyResult = [ npyFrame[:, :, ::-1] for npyFrame in npyResult ]
 
-	moviepy.ImageSequenceClip(sequence=[ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:-1] ], fps=25).write_videofile(args_strOut)
+	if args_boolBoomerang == True:
+		npyResult = npyResult + list(reversed(npyResult))[1:]
+	# end
+
+	moviepy.ImageSequenceClip(sequence=npyResult, fps=args_fltFps).write_videofile(args_strOut)
 # end
