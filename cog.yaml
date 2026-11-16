@@ -1,0 +1,17 @@
+# curl -o cog -L "https://github.com/replicate/cog/releases/latest/download/cog_$(uname -s)_$(uname -m | sed 's/aarch64/arm64/')"
+# chmod +x ./cog
+# ./cog run -i image=@images/doublestrike.jpg
+
+build:
+  gpu: true
+  cuda: "12.9"
+  python_version: "3.14"
+  python_packages:
+    - "cupy-cuda12x==14.2.0"
+    - "moviepy==2.2.1"
+    - "numpy==2.5.5"
+    - "opencv-contrib-python-headless==5.0.0.93"
+    - "torch==2.11.0"
+    - "torchvision==0.26.0"
+
+run: "cog-run.py:Predictor"

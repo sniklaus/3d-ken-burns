@@ -5,18 +5,27 @@ def process_load(npyImage, objSettings):
 	objCommon['intHeight'] = npyImage.shape[0]
 
 	tenImage = torch.FloatTensor(numpy.ascontiguousarray(npyImage.transpose(2, 0, 1)[None, :, :, :].astype(numpy.float32) * (1.0 / 255.0))).cuda()
-	tenDisparity = disparity_estimation(tenImage)
-	tenDisparity = disparity_adjustment(tenImage, tenDisparity)
-	tenDisparity = disparity_refinement(tenImage, tenDisparity)
-	tenDisparity = tenDisparity / tenDisparity.max() * objCommon['fltBaseline']
-	tenDepth = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDisparity + 0.0000001)
+
+	if 'npyDepth' not in objSettings:
+		tenDisparity = disparity_estimation(tenImage)
+		tenDisparity = disparity_adjustment(tenImage, tenDisparity)
+		tenDisparity = disparity_refinement(tenImage, tenDisparity)
+		tenDisparity = tenDisparity / tenDisparity.max() * objCommon['fltBaseline']
+		tenDepth = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDisparity + 0.0000001)
+
+	elif 'npyDepth' in objSettings:
+		tenDepth = torch.FloatTensor(numpy.ascontiguousarray(numpy.atleast_3d(objSettings['npyDepth']).astype(numpy.float32).transpose(2, 0, 1)[None, :, :, :])).cuda()
+		tenDisparity = (objCommon['fltFocal'] * objCommon['fltBaseline']) / (tenDepth + 0.0000001)
+
+	# end
+
 	tenValid = (spatial_filter(tenDisparity / tenDisparity.max(), 'laplacian').abs() < 0.03).float()
 	tenPoints = depth_to_points(tenDepth * tenValid, objCommon['fltFocal'])
 	tenUnaltered = depth_to_points(tenDepth, objCommon['fltFocal'])
 
 	objCommon['fltDispmin'] = tenDisparity.min().item()
 	objCommon['fltDispmax'] = tenDisparity.max().item()
-	objCommon['objDepthrange'] = cv2.minMaxLoc(src=tenDepth[0, 0, 128:-128, 128:-128].detach().cpu().numpy(), mask=None)
+	objCommon['objDepthrange'] = cv2.minMaxLoc(src=tenDepth[0, 0, 128:-128, 128:-128].numpy(force=True), mask=None)
 	objCommon['tenRawImage'] = tenImage
 	objCommon['tenRawDisparity'] = tenDisparity
 	objCommon['tenRawDepth'] = tenDepth
@@ -38,12 +47,12 @@ def process_inpaint(tenShift):
 	objInpainted['tenPoints'] = objInpainted['tenPoints'].view(1, 3, -1)
 	objInpainted['tenPoints'] = objInpainted['tenPoints'] - tenShift
 
-	tenMask = (objInpainted['tenExisting'] == 0.0).view(1, 1, -1)
+	tenMask = ((objInpainted['tenExisting'] == 0.0) & (objInpainted['tenValid'] > 0.0)).view(1, 1, -1)
 
-	objCommon['tenInpaImage'] = torch.cat([ objCommon['tenInpaImage'], objInpainted['tenImage'].view(1, 3, -1)[tenMask.expand(-1, 3, -1)].view(1, 3, -1) ], 2)
-	objCommon['tenInpaDisparity'] = torch.cat([ objCommon['tenInpaDisparity'], objInpainted['tenDisparity'].view(1, 1, -1)[tenMask.expand(-1, 1, -1)].view(1, 1, -1) ], 2)
-	objCommon['tenInpaDepth'] = torch.cat([ objCommon['tenInpaDepth'], objInpainted['tenDepth'].view(1, 1, -1)[tenMask.expand(-1, 1, -1)].view(1, 1, -1) ], 2)
-	objCommon['tenInpaPoints'] = torch.cat([ objCommon['tenInpaPoints'], objInpainted['tenPoints'].view(1, 3, -1)[tenMask.expand(-1, 3, -1)].view(1, 3, -1) ], 2)
+	objCommon['tenInpaImage'] = torch.cat([ objCommon['tenInpaImage'], objInpainted['tenImage'].view(1, 3, -1)[tenMask.repeat(1, 3, 1)].view(1, 3, -1) ], 2)
+	objCommon['tenInpaDisparity'] = torch.cat([ objCommon['tenInpaDisparity'], objInpainted['tenDisparity'].view(1, 1, -1)[tenMask.repeat(1, 1, 1)].view(1, 1, -1) ], 2)
+	objCommon['tenInpaDepth'] = torch.cat([ objCommon['tenInpaDepth'], objInpainted['tenDepth'].view(1, 1, -1)[tenMask.repeat(1, 1, 1)].view(1, 1, -1) ], 2)
+	objCommon['tenInpaPoints'] = torch.cat([ objCommon['tenInpaPoints'], objInpainted['tenPoints'].view(1, 3, -1)[tenMask.repeat(1, 3, 1)].view(1, 3, -1) ], 2)
 # end
 
 def process_shift(objSettings):
@@ -61,7 +70,7 @@ def process_shift(objSettings):
 	fltShiftY = fltClosestFromY - fltClosestToY
 	fltShiftZ = objSettings['fltDepthTo'] - objSettings['fltDepthFrom']
 
-	tenShift = torch.FloatTensor([ fltShiftX, fltShiftY, fltShiftZ ]).view(1, 3, 1).cuda()
+	tenShift = torch.tensor(data=[[[fltShiftX], [fltShiftY], [fltShiftZ]]], dtype=torch.float32, device=torch.device('cuda'))
 
 	tenPoints = objSettings['tenPoints'].clone()
 
@@ -140,7 +149,7 @@ def process_kenburns(objSettings):
 		objCommon['tenInpaDepth'] = objCommon['tenRawDepth'].view(1, 1, -1)
 		objCommon['tenInpaPoints'] = objCommon['tenRawPoints'].view(1, 3, -1)
 
-		for fltStep in [ 0.0, 1.0 ]:
+		for fltStep in [ 1.0 ]:
 			fltFrom = 1.0 - fltStep
 			fltTo = 1.0 - fltFrom
 
@@ -186,9 +195,9 @@ def process_kenburns(objSettings):
 
 		tenRender, tenExisting = render_pointcloud(tenPoints, torch.cat([ objCommon['tenInpaImage'], objCommon['tenInpaDepth'] ], 1).view(1, 4, -1), objCommon['intWidth'], objCommon['intHeight'], objCommon['fltFocal'], objCommon['fltBaseline'])
 
-		tenRender = fill_disocclusion(tenRender, tenRender[:, 3:4, :, :] * (tenExisting > 0.0).float())
+		tenRender = fill_disocclusion(tenRender, tenRender[:, 3:4, :, :] * (tenExisting > 0.001).float())
 
-		npyOutput = (tenRender[0, 0:3, :, :].detach().cpu().numpy().transpose(1, 2, 0) * 255.0).clip(0.0, 255.0).astype(numpy.uint8)
+		npyOutput = (tenRender[0, 0:3, :, :].numpy(force=True).transpose(1, 2, 0) * 255.0).clip(0.0, 255.0).astype(numpy.uint8)
 		npyOutput = cv2.getRectSubPix(image=npyOutput, patchSize=(max(objSettings['objFrom']['intCropWidth'], objSettings['objTo']['intCropWidth']), max(objSettings['objFrom']['intCropHeight'], objSettings['objTo']['intCropHeight'])), center=(objCommon['intWidth'] / 2.0, objCommon['intHeight'] / 2.0))
 		npyOutput = cv2.resize(src=npyOutput, dsize=(objCommon['intWidth'], objCommon['intHeight']), fx=0.0, fy=0.0, interpolation=cv2.INTER_LINEAR)
 
@@ -264,7 +273,7 @@ def preprocess_kernel(strKernel, objVariables):
 		intStrides = objVariables[strTensor].stride()
 		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()) + ')' for intArg in range(intArgs) ]
 
-		strKernel = strKernel.replace(objMatch.group(0), '(' + str.join('+', strIndex) + ')')
+		strKernel = strKernel.replace(objMatch.group(0), '(' + str('+').join(strIndex) + ')')
 	# end
 
 	while True:
@@ -281,29 +290,47 @@ def preprocess_kernel(strKernel, objVariables):
 		intStrides = objVariables[strTensor].stride()
 		strIndex = [ '((' + strArgs[intArg + 1].replace('{', '(').replace('}', ')').strip() + ')*' + str(intStrides[intArg] if torch.is_tensor(intStrides[intArg]) == False else intStrides[intArg].item()) + ')' for intArg in range(intArgs) ]
 
-		strKernel = strKernel.replace(objMatch.group(0), strTensor + '[' + str.join('+', strIndex) + ']')
+		strKernel = strKernel.replace(objMatch.group(0), strTensor + '[' + str('+').join(strIndex) + ']')
 	# end
 
 	return strKernel
 # end
 
 @cupy.memoize(for_each_device=True)
-def launch_kernel(strFunction, strKernel):
-	if 'CUDA_HOME' not in os.environ:
-		os.environ['CUDA_HOME'] = sorted(glob.glob('/usr/lib/cuda*') + glob.glob('/usr/local/cuda*'))[-1]
-	# end
+def compile_kernel(strFunction, strKernel):
+    if 'CUDA_HOME' not in os.environ:
+        if cupy.cuda.get_cuda_path() is not None:
+            os.environ['CUDA_HOME'] = cupy.cuda.get_cuda_path()
+        # end
+    # end
 
-	return cupy.cuda.compile_with_cache(strKernel, tuple([ '-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include' ])).get_function(strFunction)
+    if 'CUDA_HOME' in os.environ:
+        return cupy.RawKernel(strKernel, strFunction, tuple(['-I ' + os.environ['CUDA_HOME'], '-I ' + os.environ['CUDA_HOME'] + '/include']))
+    # end
+
+    return cupy.RawKernel(strKernel, strFunction)
+# end
+
+def launch_kernel(strFunction, strKernel, objDevice):
+    def launch(**kwargs):
+        with cupy.cuda.Device(objDevice.index):
+            if 'stream' not in kwargs:
+                kwargs['stream'] = type('Stream', (), {'ptr': torch.cuda.current_stream(objDevice).cuda_stream})()
+            # end
+
+            compile_kernel(strFunction, strKernel)(**kwargs)
+        # end
+    # end
+
+    return launch
 # end
 
 def depth_to_points(tenDepth, fltFocal):
-	tenHorizontal = torch.linspace((-0.5 * tenDepth.shape[3]) + 0.5, (0.5 * tenDepth.shape[3]) - 0.5, tenDepth.shape[3]).view(1, 1, 1, -1).expand(tenDepth.shape[0], -1, tenDepth.shape[2], -1)
+	tenHorizontal = torch.linspace(start=(-0.5 * tenDepth.shape[3]) + 0.5, end=(0.5 * tenDepth.shape[3]) - 0.5, steps=tenDepth.shape[3], dtype=tenDepth.dtype, device=tenDepth.device).view(1, 1, 1, -1).repeat(tenDepth.shape[0], 1, tenDepth.shape[2], 1)
 	tenHorizontal = tenHorizontal * (1.0 / fltFocal)
-	tenHorizontal = tenHorizontal.type_as(tenDepth)
 
-	tenVertical = torch.linspace((-0.5 * tenDepth.shape[2]) + 0.5, (0.5 * tenDepth.shape[2]) - 0.5, tenDepth.shape[2]).view(1, 1, -1, 1).expand(tenDepth.shape[0], -1, -1, tenDepth.shape[3])
+	tenVertical = torch.linspace(start=(-0.5 * tenDepth.shape[2]) + 0.5, end=(0.5 * tenDepth.shape[2]) - 0.5, steps=tenDepth.shape[2], dtype=tenDepth.dtype, device=tenDepth.device).view(1, 1, -1, 1).repeat(tenDepth.shape[0], 1, 1, tenDepth.shape[3])
 	tenVertical = tenVertical * (1.0 / fltFocal)
-	tenVertical = tenVertical.type_as(tenDepth)
 
 	return torch.cat([ tenDepth * tenHorizontal, tenDepth * tenVertical, tenDepth ], 1)
 # end
@@ -401,23 +428,23 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 			float fltSouthwest = (intNortheastX - fltOutputX)    * (fltOutputY    - intNortheastY);
 			float fltSoutheast = (fltOutputX    - intNorthwestX) * (fltOutputY    - intNorthwestY);
 
-			if ((fltNorthwest >= fltNortheast) & (fltNorthwest >= fltSouthwest) & (fltNorthwest >= fltSoutheast)) {
-				if ((intNorthwestX >= 0) & (intNorthwestX < SIZE_3(zee)) & (intNorthwestY >= 0) & (intNorthwestY < SIZE_2(zee))) {
+			if ((fltNorthwest >= fltNortheast) && (fltNorthwest >= fltSouthwest) && (fltNorthwest >= fltSoutheast)) {
+				if ((intNorthwestX >= 0) && (intNorthwestX < SIZE_3(zee)) && (intNorthwestY >= 0) && (intNorthwestY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intNorthwestY, intNorthwestX)], fltError);
 				}
 
-			} else if ((fltNortheast >= fltNorthwest) & (fltNortheast >= fltSouthwest) & (fltNortheast >= fltSoutheast)) {
-				if ((intNortheastX >= 0) & (intNortheastX < SIZE_3(zee)) & (intNortheastY >= 0) & (intNortheastY < SIZE_2(zee))) {
+			} else if ((fltNortheast >= fltNorthwest) && (fltNortheast >= fltSouthwest) && (fltNortheast >= fltSoutheast)) {
+				if ((intNortheastX >= 0) && (intNortheastX < SIZE_3(zee)) && (intNortheastY >= 0) && (intNortheastY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intNortheastY, intNortheastX)], fltError);
 				}
 
-			} else if ((fltSouthwest >= fltNorthwest) & (fltSouthwest >= fltNortheast) & (fltSouthwest >= fltSoutheast)) {
-				if ((intSouthwestX >= 0) & (intSouthwestX < SIZE_3(zee)) & (intSouthwestY >= 0) & (intSouthwestY < SIZE_2(zee))) {
+			} else if ((fltSouthwest >= fltNorthwest) && (fltSouthwest >= fltNortheast) && (fltSouthwest >= fltSoutheast)) {
+				if ((intSouthwestX >= 0) && (intSouthwestX < SIZE_3(zee)) && (intSouthwestY >= 0) && (intSouthwestY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intSouthwestY, intSouthwestX)], fltError);
 				}
 
-			} else if ((fltSoutheast >= fltNorthwest) & (fltSoutheast >= fltNortheast) & (fltSoutheast >= fltSouthwest)) {
-				if ((intSoutheastX >= 0) & (intSoutheastX < SIZE_3(zee)) & (intSoutheastY >= 0) & (intSoutheastY < SIZE_2(zee))) {
+			} else if ((fltSoutheast >= fltNorthwest) && (fltSoutheast >= fltNortheast) && (fltSoutheast >= fltSouthwest)) {
+				if ((intSoutheastX >= 0) && (intSoutheastX < SIZE_3(zee)) && (intSoutheastY >= 0) && (intSoutheastY < SIZE_2(zee))) {
 					atomicMin(&zee[OFFSET_4(zee, intSample, 0, intSoutheastY, intSoutheastX)], fltError);
 				}
 
@@ -431,7 +458,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 		'input': tenInput,
 		'data': tenData,
 		'zee': tenZee
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
@@ -494,7 +521,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 		'input': tenInput,
 		'data': tenData,
 		'zee': tenZee
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr() ]
@@ -554,7 +581,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 			float fltSouthwest = (intNortheastX - fltOutputX)    * (fltOutputY    - intNortheastY);
 			float fltSoutheast = (fltOutputX    - intNorthwestX) * (fltOutputY    - intNorthwestY);
 
-			if ((intNorthwestX >= 0) & (intNorthwestX < SIZE_3(output)) & (intNorthwestY >= 0) & (intNorthwestY < SIZE_2(output))) {
+			if ((intNorthwestX >= 0) && (intNorthwestX < SIZE_3(output)) && (intNorthwestY >= 0) && (intNorthwestY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intNorthwestY, intNorthwestX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intNorthwestY, intNorthwestX)], VALUE_3(data, intSample, intData, intPoint) * fltNorthwest);
@@ -562,7 +589,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 				}
 			}
 
-			if ((intNortheastX >= 0) & (intNortheastX < SIZE_3(output)) & (intNortheastY >= 0) & (intNortheastY < SIZE_2(output))) {
+			if ((intNortheastX >= 0) && (intNortheastX < SIZE_3(output)) && (intNortheastY >= 0) && (intNortheastY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intNortheastY, intNortheastX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intNortheastY, intNortheastX)], VALUE_3(data, intSample, intData, intPoint) * fltNortheast);
@@ -570,7 +597,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 				}
 			}
 
-			if ((intSouthwestX >= 0) & (intSouthwestX < SIZE_3(output)) & (intSouthwestY >= 0) & (intSouthwestY < SIZE_2(output))) {
+			if ((intSouthwestX >= 0) && (intSouthwestX < SIZE_3(output)) && (intSouthwestY >= 0) && (intSouthwestY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intSouthwestY, intSouthwestX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intSouthwestY, intSouthwestX)], VALUE_3(data, intSample, intData, intPoint) * fltSouthwest);
@@ -578,7 +605,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 				}
 			}
 
-			if ((intSoutheastX >= 0) & (intSoutheastX < SIZE_3(output)) & (intSoutheastY >= 0) & (intSoutheastY < SIZE_2(output))) {
+			if ((intSoutheastX >= 0) && (intSoutheastX < SIZE_3(output)) && (intSoutheastY >= 0) && (intSoutheastY < SIZE_2(output))) {
 				if (fltError <= VALUE_4(zee, intSample, 0, intSoutheastY, intSoutheastX) + 1.0) {
 					for (int intData = 0; intData < SIZE_1(data); intData += 1) {
 						atomicAdd(&output[OFFSET_4(output, intSample, intData, intSoutheastY, intSoutheastX)], VALUE_3(data, intSample, intData, intPoint) * fltSoutheast);
@@ -595,7 +622,7 @@ def render_pointcloud(tenInput, tenData, intWidth, intHeight, fltFocal, fltBasel
 		'data': tenData,
 		'zee': tenZee,
 		'output': tenOutput
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenData.data_ptr(), tenZee.data_ptr(), tenOutput.data_ptr() ]
@@ -700,7 +727,7 @@ def fill_disocclusion(tenInput, tenDepth):
 		'input': tenInput,
 		'depth': tenDepth,
 		'output': tenOutput
-	}))(
+	}), tenInput.device)(
 		grid=tuple([ int((n + 512 - 1) / 512), 1, 1 ]),
 		block=tuple([ 512, 1, 1 ]),
 		args=[ cupy.int32(n), tenInput.data_ptr(), tenDepth.data_ptr(), tenOutput.data_ptr() ]

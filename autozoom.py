@@ -12,7 +12,6 @@ import h5py
 import io
 import math
 import moviepy
-import moviepy.editor
 import numpy
 import os
 import random
@@ -29,8 +28,6 @@ import urllib
 import zipfile
 
 ##########################################################
-
-assert(int(str('').join(torch.__version__.split('.')[0:2])) >= 12) # requires at least pytorch version 1.2.0
 
 torch.set_grad_enabled(False) # make sure to not compute gradients for computational performance
 
@@ -49,26 +46,34 @@ exec(open('./models/pointcloud-inpainting.py', 'r').read())
 
 ##########################################################
 
-arguments_strIn = './images/doublestrike.jpg'
-arguments_strOut = './autozoom.mp4'
-boomerang_clip = True
-zoom_duration = 3.0
-frame_rate = 25
+args_strIn = './images/doublestrike.jpg'
+args_strOut = './autozoom.mp4'
+args_strDepth = None
+args_fltDuration = 3.0
+args_fltFps = 25.0
+args_boolBoomerang = True
 
-for strOption, strArgument in getopt.getopt(sys.argv[1:], '', [ strParameter[2:] + '=' for strParameter in sys.argv[1::2] ])[0]:
-	if strOption == '--in' and strArgument != '': arguments_strIn = strArgument # path to the input image
-	if strOption == '--out' and strArgument != '': arguments_strOut = strArgument # path to where the output should be stored
-	if strOption == '--boomerang' and strArgument != '': boomerang_clip = int(strArgument) # 0 or 1 if 1 the clip will zoom in then out, if 0 it will just zoom in
-	if strOption == '--duration' and strArgument != '': zoom_duration = float(strArgument) # duration of the zoom of the clip in seconds
-	if strOption == '--fps' and strArgument != '': frame_rate = int(strArgument) # frame rate of the clip
+for strOption, strArg in getopt.getopt(sys.argv[1:], '', [
+	'in=',
+	'out=',
+	'depth=',
+	'duration=',
+	'fps=',
+	'boomerang=',
+])[0]:
+	if strOption == '--in' and strArg != '': args_strIn = strArg # path to the input image
+	if strOption == '--out' and strArg != '': args_strOut = strArg # path to where the output should be stored
+	if strOption == '--depth' and strArg != '': args_strDepth = strArg # optional path to a depth map in numpy format
+	if strOption == '--duration' and strArgument != '': args_fltDuration = float(strArgument) # duration the output in seconds
+	if strOption == '--fps' and strArgument != '': args_fltFps = float(strArgument) # frame rate of the output
+	if strOption == '--boomerang' and strArgument != '': args_boolBoomerang = bool(strArgument) # boomerang or just zoom
 # end
 
 ##########################################################
 
 if __name__ == '__main__':
-	npyImage = cv2.imread(filename=arguments_strIn, flags=cv2.IMREAD_COLOR)
+	npyImage = cv2.imread(filename=args_strIn, flags=cv2.IMREAD_COLOR)
 
-	zoom_steps = int(zoom_duration * frame_rate)
 	intWidth = npyImage.shape[1]
 	intHeight = npyImage.shape[0]
 
@@ -79,7 +84,7 @@ if __name__ == '__main__':
 
 	npyImage = cv2.resize(src=npyImage, dsize=(intWidth, intHeight), fx=0.0, fy=0.0, interpolation=cv2.INTER_AREA)
 
-	process_load(npyImage, {})
+	process_load(npyImage, {} if args_strDepth is None else {'npyDepth': numpy.load(args_strDepth)})
 
 	objFrom = {
 		'fltCenterU': intWidth / 2.0,
@@ -95,15 +100,17 @@ if __name__ == '__main__':
 	})
 
 	npyResult = process_kenburns({
-		'fltSteps': numpy.linspace(0.0, 1.0, zoom_steps).tolist(),
+		'fltSteps': numpy.linspace(0.0, 1.0, round(args_fltDuration * args_fltFps)).tolist(),
 		'objFrom': objFrom,
 		'objTo': objTo,
 		'boolInpaint': True
 	})
 	
-	if boomerang_clip:
-		frames = [ npyFrame[:, :, ::-1] for npyFrame in npyResult + list(reversed(npyResult))[1:] ]
-	else:
-		frames = [ npyFrame[:, :, ::-1] for npyFrame in npyResult ]
-	moviepy.editor.ImageSequenceClip(sequence = frames, fps=frame_rate).write_videofile(arguments_strOut)
+	npyResult = [ npyFrame[:, :, ::-1] for npyFrame in npyResult ]
+
+	if args_boolBoomerang == True:
+		npyResult = npyResult + list(reversed(npyResult))[1:]
+	# end
+
+	moviepy.ImageSequenceClip(sequence=npyResult, fps=args_fltFps).write_videofile(args_strOut)
 # end
