@@ -1,31 +1,17 @@
-# Configuration for Cog ⚙️
-# Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
+# curl -o cog -L "https://github.com/replicate/cog/releases/latest/download/cog_$(uname -s)_$(uname -m | sed 's/aarch64/arm64/')"
+# chmod +x ./cog
+# ./cog run -i image=@images/doublestrike.jpg
 
 build:
-  # set to true if your model requires a GPU
   gpu: true
-  cuda: "11.4"
-
-  # python version in the form '3.8' or '3.8.12'
-  python_version: "3.8"
-
-  # a list of packages in the format <package-name===<version>
+  cuda: "12.9"
+  python_version: "3.14"
   python_packages:
+    - "cupy-cuda12x==14.2.0"
+    - "moviepy==2.2.1"
+    - "numpy==2.5.5"
+    - "opencv-contrib-python-headless==5.0.0.93"
+    - "torch==2.11.0"
+    - "torchvision==0.26.0"
 
-    - "ipython==7.33.0"
-    - "flask==2.0.3"
-    - "gevent==1.3.0"
-    - "moviepy==1.0.0"
-    - "numpy==1.21.6"
-    - "h5py==3.7.0"
-    - "torch==1.11.0"
-    - "torchvision==0.12.0"
-  
-  # commands run after the environment is setup
-  run:
-    - "apt-get update && apt-get install -y python3-opencv"
-    - "pip install opencv-python"
-    - "pip install scipy"
-    - "pip install cupy-cuda114 --pre"
-# predict.py defines how predictions are run on your model
-predict: "predict.py:Predictor"
+run: "cog-run.py:Predictor"
