@@ -92,6 +92,11 @@ This dataset is licensed under the [Creative Commons Attribution-NonCommercial-S
 
 Please note that this is an updated version of the dataset that we have used in our paper. So while it has fewer scenes in total, each sample capture now has a varying focal length which should help with generalizability. Furthermore, some examples are either over- or under-exposed and it would be a good idea to remove these outliers. Please see [#37](https://github.com/sniklaus/3d-ken-burns/issues/37), [#39](https://github.com/sniklaus/3d-ken-burns/issues/39), and [#40](https://github.com/sniklaus/3d-ken-burns/issues/40) for supplementary discussions.
 
+## poses
+We recently extracted camera poses from the save files of the engine to make the dataset even more useful, you can download them [here](http://content.sniklaus.com/kenburns/poses.zip) and you can find some related scripts in the `poses` directory within this repository. Please note that we weren't able to recover all poses reliably (notice the `good` flag for each frame), so I would encourage you to see [#71](https://github.com/sniklaus/3d-ken-burns/issues/71) for more details.
+
+<a href="http://content.sniklaus.com/kenburns/poses.zip"><img src="http://content.sniklaus.com/kenburns/poses.gif" width="640" height="360"></a>
+
 ## video
 <a href="http://content.sniklaus.com/kenburns/video.mp4"><img src="http://content.sniklaus.com/kenburns/video.jpg" alt="Video" width="100%"></a>
 
